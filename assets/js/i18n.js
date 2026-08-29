@@ -85,6 +85,7 @@
 
       "cta.enrol": "Jiandikishe sasa",
       "cta.viewCourse": "Ona kozi",
+      "cta.learnMore": "Jifunze zaidi",
       "cta.book": "Booku kozi hii",
 
       "misc.perPerson": "kwa kila mtu",
