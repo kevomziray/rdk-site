@@ -181,7 +181,7 @@
     sw: {
       "nav.home": "Nyumbani",
       "nav.training": "Mafunzo",
-      "nav.quiz": "Pata Mafunzo Yako",
+      "nav.quiz": "Mafunzo yapi yanakufaa?",
       "nav.abroad": "Kazi za Nje ya Nchi",
       "nav.about": "Kutuhusu",
       "nav.contact": "Wasiliana Nasi",
@@ -190,7 +190,7 @@
       "hero.badge": "Imesajiliwa na kupewa leseni Tanzania",
       "hero.title": "Kila Sekunde Inahesabika. Kila Uhai Unathamani.",
       "hero.sub": "Huduma bora za dharura na mafunzo ya huduma ya kwanza kote Tanzania — kwa familia, maeneo ya kazi, shule, na kila mtu anayeijenga mustakabali hapa nchini au nje ya nchi.",
-      "hero.ctaQuiz": "Pata Mafunzo Yako — sekunde 60",
+      "hero.ctaQuiz": "Mafunzo yapi yanakufaa? — sekunde 60",
       "hero.ctaContact": "Wasiliana nasi",
       "hero.cardTitle": "Mafunzo yanayosafiri nawe",
       "hero.cardSub": "Vyeti vya huduma ya kwanza vinavyothaminiwa hapa nchini — na kwenye CV yako ng'ambo.",
@@ -276,7 +276,7 @@
       "course.allTopics": "Ona mada zote",
       "course.audienceLabel": "Kwa nani",
 
-      "quiz.title": "Pata mafunzo yako",
+      "quiz.title": "Mafunzo yapi yanakufaa?",
       "quiz.sub": "Maswali 5 mafupi — tutakupa kozi sahihi ya RDK na bei yake papo hapo.",
       "quiz.step": "Swali",
       "quiz.stepOf": "kati ya 5",
