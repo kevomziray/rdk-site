@@ -111,6 +111,135 @@
     document.body.appendChild(a);
   }
 
+  /* ---------- dynamic content renderers ---------- */
+  function lang() { return window.RDK_I18N ? window.RDK_I18N.getLang() : "en"; }
+
+  function bi(obj) { return (obj && (obj[lang()] || obj.en)) || ""; }
+
+  function tagList(arr) {
+    return '<ul class="tags">' + arr.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>";
+  }
+
+  function courseCardHTML(c) {
+    var l = lang();
+    var topics = window.RDK.topicList(c, l);
+    var name = bi(c.name);
+    var msg = (l === "sw"
+      ? "Habari RDK! Nataka kuweka nafasi ya kozi: "
+      : "Hello RDK! I would like to book the course: ") + name + " (" + window.RDK.price(c.price) + ").";
+    return (
+      '<article class="card course-card">' +
+      '<div class="course-head"><h3>' + esc(name) + '</h3>' +
+      '<span class="pill price">' + window.RDK.price(c.price) + "</span></div>" +
+      '<div class="course-meta"><span class="pill outline">' + esc(bi(c.duration)) + '</span>' +
+      '<span class="pill">' + esc(window.t("misc.perPerson")) + "</span></div>" +
+      '<p class="audience mb-0"><strong>' + esc(window.t("course.audienceLabel")) + ":</strong> " + esc(bi(c.audience)) + "</p>" +
+      "<p class=\"muted mb-0\" style=\"font-size:.82rem;font-weight:600;\">" + esc(window.t("course.topics")) + "</p>" +
+      tagList(topics.slice(0, 6)) +
+      (topics.length > 6
+        ? '<details><summary>' + esc(window.t("course.allTopics")) + " (+" + (topics.length - 6) + ")</summary>" +
+          tagList(topics.slice(6)) + "</details>"
+        : "") +
+      '<div class="card-actions">' +
+      '<a class="btn btn-primary" target="_blank" rel="noopener" href="' + window.rdkWhatsApp(msg) + '">' + esc(window.t("cta.book")) + "</a>" +
+      "</div></article>"
+    );
+  }
+
+  function packageCardHTML(p) {
+    var l = lang();
+    var group = p.group
+      ? esc(window.t("packages.upTo")) + " " + p.group + " " + esc(window.t("packages.people"))
+      : esc(bi(p.audience));
+    var priceHTML = p.priceNote
+      ? '<span class="pkg-price">' + window.RDK.price(p.price) + '+</span>' +
+        '<div><small>' + esc(bi(p.priceNote)) + "</small></div>"
+      : '<span class="pkg-price">' + window.RDK.price(p.price) + '</span>' +
+        '<div><small>' + esc(window.t("packages.from")) + " · " + group + "</small></div>";
+    var msg = (l === "sw"
+      ? "Habari RDK! Naomba bei ya paket: "
+      : "Hello RDK! I would like a quote for the package: ") + bi(p.name) + ".";
+    return (
+      '<article class="card package-card">' +
+      (p.popular ? '<span class="pop-badge">' + esc(window.t("packages.popular")) + "</span>" : "") +
+      "<h3>" + esc(bi(p.name)) + "</h3>" +
+      '<p class="muted" style="font-size:.88rem;">' + esc(bi(p.audience)) + "</p>" +
+      priceHTML +
+      '<ul class="feat">' + (p.features[l] || p.features.en).map(function (f) { return "<li>" + esc(f) + "</li>"; }).join("") + "</ul>" +
+      '<a class="btn btn-accent" target="_blank" rel="noopener" href="' + window.rdkWhatsApp(msg) + '">' + esc(window.t("packages.cta")) + "</a>" +
+      "</article>"
+    );
+  }
+
+  var trainingFilter = "all";
+
+  function renderFeatured() {
+    var mount = document.getElementById("featured-courses");
+    if (!mount) return;
+    mount.innerHTML = window.RDK.courses
+      .filter(function (c) { return c.featured; })
+      .map(courseCardHTML).join("");
+  }
+
+  function renderPackages() {
+    var mount = document.getElementById("packages-grid");
+    if (!mount) return;
+    var only = mount.getAttribute("data-packages");
+    var list = window.RDK.packages;
+    if (only) {
+      var ids = only.split(",");
+      list = list.filter(function (p) { return ids.indexOf(p.id) !== -1; });
+    }
+    mount.innerHTML = list.map(packageCardHTML).join("");
+  }
+
+  function renderFilterChips() {
+    var mount = document.getElementById("filter-chips");
+    if (!mount) return;
+    var chips = ['<button type="button" class="chip-btn' + (trainingFilter === "all" ? " is-active" : "") + '" data-cat="all">' + esc(window.t("training.all")) + "</button>"];
+    window.RDK.categories.forEach(function (cat) {
+      chips.push(
+        '<button type="button" class="chip-btn' + (trainingFilter === cat.id ? " is-active" : "") +
+        '" data-cat="' + cat.id + '">' + esc(bi(cat.name)) + "</button>"
+      );
+    });
+    mount.innerHTML = chips.join("");
+  }
+
+  function renderCourseGrid() {
+    var mount = document.getElementById("courses-grid");
+    if (!mount) return;
+    var list = window.RDK.courses.filter(function (c) {
+      return trainingFilter === "all" || c.cats.indexOf(trainingFilter) !== -1;
+    });
+    mount.innerHTML = list.map(courseCardHTML).join("");
+    var count = document.getElementById("result-count");
+    if (count) count.textContent = list.length + " " + window.t("training.count");
+  }
+
+  function wireDynamicContent() {
+    renderFeatured();
+    renderPackages();
+    renderFilterChips();
+    renderCourseGrid();
+    var chips = document.getElementById("filter-chips");
+    if (chips) {
+      chips.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-cat]");
+        if (!btn) return;
+        trainingFilter = btn.getAttribute("data-cat");
+        renderFilterChips();
+        renderCourseGrid();
+      });
+    }
+    document.addEventListener("rdk:lang", function () {
+      renderFeatured();
+      renderPackages();
+      renderFilterChips();
+      renderCourseGrid();
+    });
+  }
+
   /* ---------- behaviours ---------- */
   function wireBehaviours() {
     var burger = document.getElementById("nav-burger");
@@ -148,6 +277,7 @@
     renderFooter();
     renderWaFloat();
     wireBehaviours();
+    wireDynamicContent();
     /* i18n ran first (its own DOMContentLoaded); re-apply to freshly rendered chrome */
     if (window.RDK_I18N) window.RDK_I18N.apply(document);
   });
