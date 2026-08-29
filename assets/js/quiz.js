@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    RDK Emergency Care — "Find Your Training" quiz
    5-question wizard with weighted scoring over RDK.courses,
    a corporate/group branch and a work-abroad branch.
@@ -8,7 +8,7 @@
 
   var QUESTIONS = [
     {
-      id: "audience", key: "quiz.q1", cols: 2,
+      id: "audience", key: "quiz.q1",
       options: [
         { value: "personal", label: "quiz.q1.personal" },
         { value: "team", label: "quiz.q1.team" },
@@ -17,7 +17,7 @@
       ]
     },
     {
-      id: "role", key: "quiz.q2", cols: 2,
+      id: "role", key: "quiz.q2",
       options: [
         { value: "parent", label: "quiz.q2.parent" },
         { value: "teacher", label: "quiz.q2.teacher" },
@@ -33,7 +33,7 @@
       ]
     },
     {
-      id: "environment", key: "quiz.q3", cols: 2,
+      id: "environment", key: "quiz.q3",
       options: [
         { value: "home", label: "quiz.q3.home" },
         { value: "school", label: "quiz.q3.school" },
@@ -44,7 +44,7 @@
       ]
     },
     {
-      id: "experience", key: "quiz.q4", cols: 1,
+      id: "experience", key: "quiz.q4",
       options: [
         { value: "none", label: "quiz.q4.none" },
         { value: "some", label: "quiz.q4.some" },
@@ -52,7 +52,7 @@
       ]
     },
     {
-      id: "time", key: "quiz.q5", cols: 2,
+      id: "time", key: "quiz.q5",
       options: [
         { value: "half", label: "quiz.q5.half" },
         { value: "day", label: "quiz.q5.day" },
@@ -136,23 +136,29 @@
   }
 
   /* ---------- rendering ---------- */
+  function questionHeading(q) {
+    /* Swahili question texts already carry their own numbering
+       ("Swali la N kati ya 5 — …"); compose the same for English */
+    if (lang() === "sw") return t(q.key);
+    return t("quiz.step") + " " + (step + 1) + " " + t("quiz.stepOf") + " — " + t(q.key);
+  }
+
   function renderQuestion() {
     var q = QUESTIONS[step];
+    var heading = questionHeading(q);
     var html =
       '<div class="quiz-progress">' +
-      '<div class="meta"><span>' + esc(t("quiz.step")) + " " + (step + 1) + " " + esc(t("quiz.stepOf")) +
-      '</span><span>' + Math.round((step / QUESTIONS.length) * 100) + "%</span></div>" +
+      '<div class="meta"><span></span><span>' + Math.round((step / QUESTIONS.length) * 100) + "%</span></div>" +
       '<div class="progress-track"><div class="progress-fill" style="width:' + (step / QUESTIONS.length * 100) + '%"></div></div></div>' +
-      '<h2 class="quiz-q">' + esc(t(q.key)) + "</h2>" +
-      '<div class="opts' + (q.cols === 2 ? " two-col" : "") + '" role="radiogroup" aria-label="' + esc(t(q.key)) + '">';
+      '<h2 class="quiz-q">' + esc(heading) + "</h2>" +
+      '<select class="quiz-select" id="quiz-select" aria-label="' + esc(heading) + '">' +
+      '<option value="" disabled' + (answers[q.id] ? "" : " selected") + " hidden>" + esc(t("quiz.choose")) + "</option>";
 
     q.options.forEach(function (o) {
-      html +=
-        '<label class="opt"><input type="radio" name="quiz-' + q.id + '" value="' + o.value + '"' +
-        (answers[q.id] === o.value ? " checked" : "") + ">" +
-        '<span class="opt-body">' + esc(t(o.label)) + "</span></label>";
+      html += '<option value="' + o.value + '"' +
+        (answers[q.id] === o.value ? " selected" : "") + ">" + esc(t(o.label)) + "</option>";
     });
-    html += "</div>";
+    html += "</select>";
 
     html += '<div class="quiz-nav">' +
       (step > 0
@@ -165,12 +171,10 @@
     el("quiz-body").innerHTML = html;
 
     var nextBtn = el("quiz-next");
-    var inputs = el("quiz-body").querySelectorAll("input[type=radio]");
-    Array.prototype.forEach.call(inputs, function (inp) {
-      inp.addEventListener("change", function () {
-        answers[q.id] = inp.value;
-        nextBtn.disabled = false;
-      });
+    var select = el("quiz-select");
+    select.addEventListener("change", function () {
+      answers[q.id] = select.value;
+      nextBtn.disabled = !select.value;
     });
     if (answers[q.id]) nextBtn.disabled = false;
 
