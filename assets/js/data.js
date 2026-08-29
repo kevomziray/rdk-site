@@ -1,0 +1,412 @@
+/* ============================================================
+   RDK Emergency Care — course & package database (EN / SW)
+   Single source of truth for the training page, the quiz and
+   pricing cards. Topics are referenced by key from RDK_TOPICS.
+   ============================================================ */
+(function () {
+  "use strict";
+
+  /* ---------- shared bilingual topic vocabulary ---------- */
+  var T = {
+    cpr: { en: "CPR", sw: "CPR (ufufuzi wa moyo na mapafu)" },
+    aed: { en: "AED operation", sw: "Matumizi ya AED" },
+    choking: { en: "Choking", sw: "Kuzama hewani" },
+    severeBleeding: { en: "Severe bleeding", sw: "Kutokwa damu nyingi" },
+    bleeding: { en: "Bleeding control", sw: "Kudhibiti kutokwa damu" },
+    burns: { en: "Burns", sw: "Majeraha ya moto" },
+    fractures: { en: "Fractures", sw: "Mifupa iliyovunjika" },
+    stroke: { en: "Stroke recognition", sw: "Kutambua kiharusi" },
+    heartAttack: { en: "Heart attack", sw: "Shambulizi la moyo" },
+    seizures: { en: "Seizures", sw: "Degedgee (kifafa)" },
+    fainting: { en: "Fainting", sw: "Kuzimia" },
+    basicResponse: { en: "Basic emergency response", sw: "Mwitikio wa msingi wa dharura" },
+    airwayPartial: { en: "Partial airway obstruction", sw: "Kuzuiliwa kwa hewa kiasi" },
+    airwayComplete: { en: "Complete airway obstruction", sw: "Kuzuiliwa kwa hewa kikamilifu" },
+    adultChildInfantChoking: { en: "Adult, child & infant choking", sw: "Kuzama hewani: wazima, watoto, wachanga" },
+    backBlows: { en: "Back blows", sw: "Mapigo ya mgongo" },
+    abdominalThrusts: { en: "Abdominal thrusts", sw: "Mikazo ya tumbo" },
+    chokingSpecial: { en: "Choking while pregnant & unconscious casualty", sw: "Kuzama hewani: wajawazito na wasio na fahamu" },
+    playgroundAccidents: { en: "Playground accidents", sw: "Ajali za uwanja wa michezo" },
+    sportsInjuries: { en: "Sports injuries", sw: "Majeraha ya michezo" },
+    asthma: { en: "Asthma", sw: "Pumu" },
+    allergicReactions: { en: "Allergic reactions", sw: "Mizio" },
+    headInjuries: { en: "Head injuries", sw: "Majeraha ya kichwa" },
+    evacuation: { en: "Emergency evacuation", sw: "Uhamishaji wa dharura" },
+    firstAidKit: { en: "First aid kit use", sw: "Sanduku la huduma ya kwanza" },
+    refresherCpr: { en: "CPR refresher", sw: "Marudio ya CPR" },
+    workplaceEmergencies: { en: "Workplace emergencies", sw: "Dharura za mahali pa kazi" },
+    emergencyProcedures: { en: "Emergency procedures", sw: "Taratibu za dharura" },
+    practicalAssessment: { en: "Practical assessment", sw: "Tathmini ya vitendo" },
+    fastRecognition: { en: "FAST stroke recognition", sw: "Kutambua kiharusi (FAST)" },
+    warningSigns: { en: "Warning signs", sw: "Dalili za onyo" },
+    tia: { en: "Mini-stroke (TIA) awareness", sw: "Kiharusi kidogo (TIA)" },
+    whatNotToDo: { en: "What not to do", sw: "Mambo usiyofanya" },
+    recoveryPosition: { en: "Recovery position", sw: "Mkao wa kuponya (recovery position)" },
+    strokePrevention: { en: "Stroke prevention", sw: "Kuzuia kiharusi" },
+    emergencyCommunication: { en: "Emergency communication", sw: "Mawasiliano ya dharura" },
+    rehabAwareness: { en: "Rehabilitation & caregiver awareness", sw: "Urekebishaji na uangalizi wa wagonjwa" },
+    principles: { en: "First aid principles", sw: "Misingi ya huduma ya kwanza" },
+    sceneSafety: { en: "Scene safety", sw: "Usalama wa eneo la tukio" },
+    casualtyAssessment: { en: "Casualty assessment", sw: "Kupima hali ya mhanga" },
+    callingHelp: { en: "Calling for emergency assistance", sw: "Kuita msaada wa dharura" },
+    shock: { en: "Shock", sw: "Mshtuko (shock)" },
+    sprainsStrains: { en: "Sprains & strains", sw: "Majeraha ya misuli na viungo" },
+    diabetic: { en: "Diabetic emergencies", sw: "Dharura za kisukari" },
+    poisoning: { en: "Poisoning", sw: "Sumu" },
+    eyeInjuries: { en: "Eye injuries", sw: "Majeraha ya jicho" },
+    cuts: { en: "Cuts", sw: "Misuono na vidonda" },
+    drowning: { en: "Drowning", sw: "Kuzama majini" },
+    breathingDifficulties: { en: "Breathing difficulties", sw: "Matatizo ya kupumua" },
+    fireResponse: { en: "Fire emergency response", sw: "Mwitikio wa dharura ya moto" },
+    thermalBurns: { en: "Thermal burns", sw: "Majeraha ya moto wa joto" },
+    chemicalBurns: { en: "Chemical burns", sw: "Majeraha ya kemikali" },
+    electricalBurns: { en: "Electrical burns", sw: "Majeraha ya umeme" },
+    smokeInhalation: { en: "Smoke inhalation", sw: "Kuvuta moshi" },
+    extinguisher: { en: "Fire extinguisher awareness", sw: "Utumiaji wa kinzamoto" },
+    assembly: { en: "Emergency assembly procedures", sw: "Mkusanyiko wa dharura" },
+    trauma: { en: "Trauma care", sw: "Huduma ya majeraha makali" },
+    assaultInjuries: { en: "Assault-related injuries", sw: "Majeraha ya unyanyasaji" },
+    crowdEmergencies: { en: "Crowd emergencies", sw: "Dharura za makundi ya watu" },
+    roadAccidents: { en: "Road traffic accidents", sw: "Ajali za barabarani" },
+    spinalInjuries: { en: "Spinal injuries", sw: "Majeraha ya uti wa mgongo" },
+    safeMovement: { en: "Safe casualty movement", sw: "Kuhamisha mhanga kwa usalama" },
+    vehicleKit: { en: "Vehicle first aid kit", sw: "Sanduku la huduma ya kwanza la gari" },
+    cardiacArrest: { en: "Cardiac arrest recognition", sw: "Kutambua kufa kwa moyo" },
+    highQualityCpr: { en: "High-quality CPR", sw: "CPR bora" },
+    adultCpr: { en: "Adult CPR", sw: "CPR — watu wazima" },
+    childCpr: { en: "Child CPR", sw: "CPR — watoto" },
+    infantCpr: { en: "Infant CPR", sw: "CPR — wachanga" },
+    rescueBreathing: { en: "Rescue breathing", sw: "Kupumua kwa kuokoa" },
+    barrierDevices: { en: "Barrier devices", sw: "Vifaa vya kinga" },
+    twoRescuer: { en: "Two-rescuer & team CPR", sw: "CPR ya wawili na ya timu" },
+    aedMaintenance: { en: "AED maintenance", sw: "Matunzi ya AED" },
+    workplaceRisk: { en: "Workplace risk awareness", sw: "Ufahamu wa hatari za kazi" },
+    emergencyReporting: { en: "Emergency reporting", sw: "Kuripoti dharura" },
+    guestEmergencies: { en: "Guest emergencies", sw: "Dharura za wageni" },
+    foodEmergencies: { en: "Food-related emergencies", sw: "Dharura za chakula" },
+    heatIllness: { en: "Heat illness", sw: "Ugonjwa wa joto" },
+    insectBites: { en: "Insect bites", sw: "Usumbuji wa wadudu" },
+    snakeBites: { en: "Snake bites", sw: "Sumu ya nyoka" },
+    dislocations: { en: "Dislocations", sw: "Kupinduka kwa viungo" },
+    concussion: { en: "Concussion", sw: "Kuruka kichwa (concussion)" },
+    heatExhaustion: { en: "Heat exhaustion", sw: "Uchovu wa joto" },
+    heatStroke: { en: "Heat stroke", sw: "Kiharusi cha joto" },
+    muscleCramps: { en: "Muscle cramps", sw: "Kupwa kwa misuli" },
+    sidelineAssessment: { en: "Sideline assessment", sw: "Tathmini ya haraka uwanjani" },
+    multipleCasualty: { en: "Multiple casualty scenarios", sw: "Hali za wahanga wengi" },
+    splinting: { en: "Splinting", sw: "Kuwekewa vibandiko" },
+    bandaging: { en: "Bandaging", sw: "Kufunga bandeji" },
+    spinalPrecautions: { en: "Spinal injury precautions", sw: "Tahadhari ya uti wa mgongo" },
+    simulations: { en: "First aid simulations", sw: "Mazoezi ya kuigiza dharura" },
+    fallsHeight: { en: "Falls from height", sw: "Kuanguka kutoka juu" },
+    crushInjuries: { en: "Crush injuries", sw: "Majeraha ya kubanwa" },
+    electricalInjuries: { en: "Electrical injuries", sw: "Majeraha ya umeme" },
+    chemicalExposure: { en: "Chemical exposure", sw: "Kugusana na kemikali" },
+    dustRespiratory: { en: "Dust & respiratory emergencies", sw: "Vumbi na njia za hewa" },
+    siteEvacuation: { en: "Site emergency evacuation", sw: "Uhamishaji wa dharura kieneo" },
+    workplaceHazards: { en: "Workplace hazards", sw: "Vyanzo vya hatari kazini" },
+    industrialInjuries: { en: "Industrial injuries", sw: "Majeraha ya viwandani" },
+    machineryInjuries: { en: "Machinery injuries", sw: "Majeraha ya mashine" },
+    workplacePoisoning: { en: "Workplace poisoning", sw: "Sumu kazini" },
+    incidentDocumentation: { en: "Incident documentation", sw: "Uandishi wa matukio" },
+    actionPlans: { en: "Emergency action plans", sw: "Mipango ya hatua za dharura" },
+    outdoorAssessment: { en: "Outdoor casualty assessment", sw: "Kupima mhanga nje ya nyumba" },
+    dehydration: { en: "Dehydration", sw: "Upungufu wa maji mwilini" },
+    hypothermia: { en: "Hypothermia", sw: "Baridi kali mwilini" },
+    improvisedSplinting: { en: "Improvised splinting", sw: "Vibandiko vya haraka" },
+    remoteManagement: { en: "Remote-area emergency management", sw: "Dharura maeneo ya mbali" },
+    miningInjuries: { en: "Mining injuries", sw: "Majeraha ya migodini" },
+    heavyMachinery: { en: "Heavy machinery incidents", sw: "Matukio ya mashine nzito" },
+    confinedSpace: { en: "Confined-space awareness", sw: "Maeneo yaliyofungwa" },
+    certificates: { en: "Certificates for participants", sw: "Vyeti kwa washiriki" },
+    awarenessMaterials: { en: "First aid awareness materials", sw: "Vifaa vya uelewa wa huduma ya kwanza" },
+    responseGuide: { en: "Emergency response guide", sw: "Mwongozo wa mwitikio wa dharura" },
+    kitAssessment: { en: "First aid kit assessment", sw: "Kupima sanduku la huduma ya kwanza" },
+    responsePlan: { en: "Emergency response plan", sw: "Mpango wa mwitikio wa dharura" },
+    workplaceAssessment: { en: "Workplace emergency assessment", sw: "Kupima dharura za mahali pa kazi" },
+    staffCertification: { en: "Staff certification", sw: "Uidhinishaji wa wafanyakazi" },
+    aedBundle: { en: "AED + training + response plan bundle available", sw: "AED + mafunzo + mpango wa dharura" }
+  };
+
+  /* ---------- the 5 website landing categories (from company plan) ---------- */
+  var CATEGORIES = [
+    {
+      id: "community",
+      icon: "users",
+      name: { en: "Personal & Community First Aid", sw: "Huduma ya Kwanza ya Kibinafsi na Jamii" },
+      summary: {
+        en: "Life-saving skills for everyday life — at home, in your street, at church or mosque.",
+        sw: "Ujuzi wa kuokoa maisha kwa siku za kawaida — nyumbani, mtaani, kanisani au msikitini."
+      }
+    },
+    {
+      id: "workplace",
+      icon: "briefcase",
+      name: { en: "Workplace First Aid", sw: "Huduma ya Kwanza ya Mahali pa Kazi" },
+      summary: {
+        en: "Keep your team safe and compliant — from small offices to full industrial sites.",
+        sw: "Linda usalama wa timu yako — kutoka ofisi ndogo hadi viwanda vikubwa."
+      }
+    },
+    {
+      id: "industry",
+      icon: "hardhat",
+      name: { en: "Industry-Specific First Aid", sw: "Huduma ya Kwanza ya Sekta Maalum" },
+      summary: {
+        en: "Tailored for construction, mining, transport, security, hospitality and sports.",
+        sw: "Maalum kwa ujenzi, madini, usafiri, usalama, utalii na michezo."
+      }
+    },
+    {
+      id: "response",
+      icon: "pulse",
+      name: { en: "Emergency Response", sw: "Mwitikio wa Dharura" },
+      summary: {
+        en: "CPR, AED and disaster response — the skills that make you the person who acts.",
+        sw: "CPR, AED na mwitikio wa maafa — ujuzi unaofanya uwe mtu wa kuchukua hatua."
+      }
+    },
+    {
+      id: "special",
+      icon: "heart",
+      name: { en: "Specialized Community Courses", sw: "Kozi Maalum za Jamii" },
+      summary: {
+        en: "For parents, schools, childcare, elderly caregivers and community organizations.",
+        sw: "Kwa wazazi, shule, malezi ya watoto, wazee na mashirika ya jamii."
+      }
+    }
+  ];
+
+  /* ---------- the 20 courses ----------
+     cats: category ids · hours: for quiz time matching · price: TZS per person
+     roles/env: quiz matching tags · abroad: work-abroad page flag        */
+  var COURSES = [
+    {
+      id: "community-first-aid", cats: ["community", "response"], hours: 5,
+      duration: { en: "4–6 hours", sw: "Saa 4–6" }, price: 50000, featured: true,
+      name: { en: "Community First Aid", sw: "Huduma ya Kwanza ya Jamii" },
+      audience: { en: "Everyone", sw: "Kila mtu" },
+      topics: ["cpr", "choking", "severeBleeding", "burns", "fractures", "stroke", "heartAttack", "seizures", "fainting", "basicResponse"],
+      roles: ["student", "general"], env: ["home", "public"]
+    },
+    {
+      id: "choking-airway", cats: ["community", "response"], hours: 3.5,
+      duration: { en: "3–4 hours", sw: "Saa 3–4" }, price: 80000,
+      name: { en: "Choking & Airway Emergency", sw: "Kuzama Hewani na Dharura za Hewa" },
+      audience: { en: "Parents, teachers, hospitality staff", sw: "Wazazi, walimu, wafanyakazi wa hoteli" },
+      topics: ["airwayPartial", "airwayComplete", "adultChildInfantChoking", "backBlows", "abdominalThrusts", "chokingSpecial", "cpr"],
+      roles: ["parent", "teacher", "hospitality", "general"], env: ["home", "school", "public"]
+    },
+    {
+      id: "school-first-aid", cats: ["special"], hours: 8,
+      duration: { en: "1 day", sw: "Siku 1" }, price: 100000,
+      name: { en: "School First Aid", sw: "Huduma ya Kwanza ya Shuleni" },
+      audience: { en: "Teachers, school nurses, coaches, boarding & daycare staff", sw: "Walimu, wauguzi wa shule, makocha, wafanyakazi wa bwenyi na malezi" },
+      topics: ["playgroundAccidents", "sportsInjuries", "bleeding", "fractures", "burns", "choking", "asthma", "seizures", "allergicReactions", "fainting", "headInjuries", "cpr", "aed", "evacuation", "firstAidKit"],
+      roles: ["teacher"], env: ["school"], school: true
+    },
+    {
+      id: "occupational-refresher", cats: ["workplace"], hours: 8,
+      duration: { en: "1 day", sw: "Siku 1" }, price: 100000,
+      name: { en: "Occupational First Aid Refresher", sw: "Marudio ya Huduma ya Kwanza ya Kazini" },
+      audience: { en: "Existing first aiders", sw: "Wenye mafunzo ya awali" },
+      topics: ["refresherCpr", "aed", "choking", "bleeding", "burns", "shock", "fractures", "workplaceEmergencies", "firstAidKit", "emergencyProcedures", "practicalAssessment"],
+      roles: ["office", "industrial", "healthcare"], env: ["office", "industrial"], refresher: true
+    },
+    {
+      id: "brain-stroke", cats: ["community", "special"], hours: 8,
+      duration: { en: "1 day", sw: "Siku 1" }, price: 110000,
+      name: { en: "Brain Health & Stroke First Aid", sw: "Afya ya Ubongo na Kiharusi" },
+      audience: { en: "General public, older adults, caregivers, corporate staff, religious groups", sw: "Umma, wazee, walezi, wafanyakazi, vikundi vya kidini" },
+      topics: ["stroke", "fastRecognition", "warningSigns", "tia", "whatNotToDo", "recoveryPosition", "strokePrevention", "emergencyCommunication", "rehabAwareness"],
+      roles: ["general", "parent", "office"], env: ["home", "public"]
+    },
+    {
+      id: "standard-first-aid", cats: ["community"], hours: 8,
+      duration: { en: "1 day", sw: "Siku 1" }, price: 120000, featured: true,
+      name: { en: "RDK Standard First Aid", sw: "Huduma ya Kwanza ya Kawaida ya RDK" },
+      audience: { en: "General public, employees, students", sw: "Umma, wafanyakazi, wanafunzi" },
+      topics: ["principles", "sceneSafety", "casualtyAssessment", "callingHelp", "cpr", "aed", "choking", "severeBleeding", "shock", "burns", "fractures", "sprainsStrains", "fainting", "seizures", "stroke", "heartAttack", "asthma", "diabetic", "allergicReactions", "poisoning", "eyeInjuries", "headInjuries", "recoveryPosition", "firstAidKit"],
+      roles: ["student", "general", "office", "abroad"], env: ["home", "office", "public"], abroad: ["general"]
+    },
+    {
+      id: "child-infant", cats: ["community", "special"], hours: 8,
+      duration: { en: "1 day", sw: "Siku 1" }, price: 120000,
+      name: { en: "Child & Infant First Aid", sw: "Huduma ya Kwanza ya Watoto na Wachanga" },
+      audience: { en: "Parents, nannies, daycare workers, teachers, domestic workers", sw: "Wazazi, walezi, wafanyakazi wa malezi, walimu, wafanyakazi wa nyumbani" },
+      topics: ["cuts", "bleeding", "seizures", "allergicReactions", "poisoning", "drowning", "breathingDifficulties", "headInjuries", "infantCpr", "childCpr", "choking"],
+      roles: ["parent", "teacher", "abroad"], env: ["home"], abroad: ["caregiving", "aupair"]
+    },
+    {
+      id: "fire-burns", cats: ["industry", "response"], hours: 8,
+      duration: { en: "1 day", sw: "Siku 1" }, price: 120000,
+      name: { en: "Fire, Burns & Emergency Response", sw: "Moto, Majeraha ya Moto na Mwitikio wa Dharura" },
+      audience: { en: "Companies, hotels, factories", sw: "Makampuni, hoteli, viwanda" },
+      topics: ["fireResponse", "burns", "thermalBurns", "chemicalBurns", "electricalBurns", "smokeInhalation", "evacuation", "extinguisher", "cpr", "assembly"],
+      roles: ["office", "industrial", "hospitality"], env: ["office", "industrial"]
+    },
+    {
+      id: "security-first-aid", cats: ["industry"], hours: 8,
+      duration: { en: "1 day", sw: "Siku 1" }, price: 120000,
+      name: { en: "First Aid for Security Personnel", sw: "Huduma ya Kwanza kwa Walinda Usalama" },
+      audience: { en: "Security companies, guards, banks, hotels, malls, government facilities", sw: "Makampuni ya usalama, walinzi, benki, hoteli, maduka, taasisi za serikali" },
+      topics: ["sceneSafety", "casualtyAssessment", "cpr", "aed", "choking", "bleeding", "trauma", "fractures", "assaultInjuries", "burns", "fainting", "seizures", "crowdEmergencies", "emergencyCommunication"],
+      roles: ["security", "abroad"], env: ["public", "events"], abroad: ["security"]
+    },
+    {
+      id: "drivers-first-aid", cats: ["industry"], hours: 8,
+      duration: { en: "1 day", sw: "Siku 1" }, price: 120000,
+      name: { en: "First Aid for Drivers & Transport", sw: "Huduma ya Kwanza kwa Madereva na Usafiri" },
+      audience: { en: "Bus, truck, taxi & tour drivers, school buses, delivery, government drivers", sw: "Madereva wa mabasi, malori, teksi na utalii, mabasi ya shule, uwasilishaji" },
+      topics: ["roadAccidents", "sceneSafety", "severeBleeding", "fractures", "headInjuries", "spinalInjuries", "shock", "cpr", "choking", "burns", "safeMovement", "emergencyCommunication", "vehicleKit"],
+      roles: ["driver"], env: ["road"]
+    },
+    {
+      id: "aed-operator", cats: ["response", "workplace"], hours: 5,
+      duration: { en: "4–6 hours", sw: "Saa 4–6" }, price: 150000,
+      name: { en: "AED Operator Training", sw: "Mafunzo ya Matumizi ya AED" },
+      audience: { en: "Hotels, malls, airports, banks, large offices, gyms, schools, universities", sw: "Hoteli, maduka, viwanja vya ndege, benki, ofisi, mazoezi, shule, vyuo" },
+      topics: ["cardiacArrest", "cpr", "aed", "aedMaintenance", "twoRescuer", "simulations"],
+      note: { en: "Bundle available: AED device + staff training + emergency response plan.", sw: "Pamoja: kifaa cha AED + mafunzo + mpango wa dharura." },
+      roles: ["office", "healthcare", "general"], env: ["office", "public"]
+    },
+    {
+      id: "work-first-aid", cats: ["workplace"], hours: 8,
+      duration: { en: "1 day", sw: "Siku 1" }, price: 150000, featured: true,
+      name: { en: "Emergency First Aid at Work", sw: "Huduma ya Kwanza ya Dharura Kazini" },
+      audience: { en: "SMEs & offices", sw: "Biashara ndogo na ofisi" },
+      topics: ["workplaceRisk", "casualtyAssessment", "cpr", "choking", "bleeding", "burns", "fractures", "shock", "fainting", "seizures", "stroke", "heartAttack", "asthma", "diabetic", "emergencyReporting"],
+      roles: ["office"], env: ["office"]
+    },
+    {
+      id: "hospitality-tourism", cats: ["industry"], hours: 8,
+      duration: { en: "1 day", sw: "Siku 1" }, price: 150000,
+      name: { en: "First Aid for Hospitality & Tourism", sw: "Huduma ya Kwanza ya Utalii na Hoteli" },
+      audience: { en: "Hotels, lodges, restaurants, tour & safari companies, camps, beach resorts", sw: "Hoteli, lodge, migahawa, utalii na safari, kambi, fukwe" },
+      topics: ["guestEmergencies", "cpr", "aed", "choking", "foodEmergencies", "allergicReactions", "burns", "cuts", "drowning", "heatIllness", "insectBites", "snakeBites", "fractures", "emergencyCommunication"],
+      roles: ["hospitality", "abroad"], env: ["events", "outdoors"], abroad: ["hospitality", "maritime"]
+    },
+    {
+      id: "sports-first-aid", cats: ["industry"], hours: 8,
+      duration: { en: "1 day", sw: "Siku 1" }, price: 150000,
+      name: { en: "Sports First Aid", sw: "Huduma ya Kwanza ya Michezo" },
+      audience: { en: "Coaches, gyms, football clubs, schools, academies, fitness instructors", sw: "Makocha, mazoezi, klabu za mpira, shule, vyuo, waalimu wa gym" },
+      topics: ["sportsInjuries", "sprainsStrains", "fractures", "dislocations", "concussion", "headInjuries", "bleeding", "heatExhaustion", "heatStroke", "cardiacArrest", "cpr", "aed", "muscleCramps", "sidelineAssessment"],
+      roles: ["coach"], env: ["events", "outdoors"]
+    },
+    {
+      id: "comprehensive", cats: ["workplace", "response"], hours: 16,
+      duration: { en: "2 days", sw: "Siku 2" }, price: 200000,
+      name: { en: "RDK Comprehensive First Aid", sw: "Huduma ya Kwanza ya Kina ya RDK" },
+      audience: { en: "Companies, NGOs, schools, churches & mosques, hotels, security, community organizations", sw: "Makampuni, NGO, shule, makanisa na misikiti, hoteli, usalama, vyama vya jamii" },
+      topics: ["casualtyAssessment", "cpr", "aed", "multipleCasualty", "severeBleeding", "splinting", "bandaging", "fractures", "burns", "spinalPrecautions", "headInjuries", "shock", "evacuation", "simulations"],
+      roles: ["office", "general", "abroad"], env: ["office", "events", "industrial"], abroad: ["oilgas", "maritime"]
+    },
+    {
+      id: "construction", cats: ["industry"], hours: 16,
+      duration: { en: "2 days", sw: "Siku 2" }, price: 220000,
+      name: { en: "Construction Site First Aid", sw: "Huduma ya Kwanza ya Tovuti ya Ujenzi" },
+      audience: { en: "Construction companies, contractors, engineers, supervisors, workers, safety officers", sw: "Makampuni ya ujenzi, wakandarasi, wahandisi, wasimamizi, wafanyakazi, maafisa wa usalama" },
+      topics: ["fallsHeight", "headInjuries", "spinalInjuries", "fractures", "crushInjuries", "cuts", "severeBleeding", "electricalInjuries", "burns", "eyeInjuries", "chemicalExposure", "heatExhaustion", "heatStroke", "dustRespiratory", "siteEvacuation"],
+      roles: ["industrial", "abroad"], env: ["industrial"], abroad: ["construction"]
+    },
+    {
+      id: "industrial", cats: ["workplace", "industry"], hours: 24,
+      duration: { en: "3 days", sw: "Siku 3" }, price: 250000,
+      name: { en: "RDK Industrial / Workplace First Aid", sw: "Huduma ya Kwanza ya Viwanda / Kazini ya RDK" },
+      audience: { en: "Factories, construction, warehouses, mining, manufacturing, energy, NGOs, schools, hotels", sw: "Viwanda, ujenzi, maghala, madini, utengenezaji, nishati, NGO, shule, hoteli" },
+      topics: ["workplaceEmergencies", "workplaceHazards", "industrialInjuries", "machineryInjuries", "severeBleeding", "crushInjuries", "chemicalExposure", "electricalInjuries", "burns", "fractures", "eyeInjuries", "workplacePoisoning", "fallsHeight", "heatExhaustion", "shock", "evacuation", "firstAidKit", "incidentDocumentation", "actionPlans", "simulations"],
+      roles: ["industrial"], env: ["industrial"]
+    },
+    {
+      id: "cpr-aed-bls", cats: ["response", "community"], hours: 8,
+      duration: { en: "1 day", sw: "Siku 1" }, price: 250000, featured: true,
+      name: { en: "CPR & AED / BLS", sw: "CPR na AED / BLS" },
+      audience: { en: "Healthcare workers, security, teachers, fitness instructors, lifeguards, hotel staff, parents, first responders", sw: "Wafanyakazi wa afya, usalama, walimu, waalimu wa gym, waokoa majini, hoteli, wazazi, waokoa dharura" },
+      topics: ["cardiacArrest", "highQualityCpr", "adultCpr", "childCpr", "infantCpr", "aed", "rescueBreathing", "barrierDevices", "choking", "twoRescuer", "emergencyCommunication"],
+      roles: ["healthcare", "coach", "security", "abroad"], env: ["home", "office", "public"], abroad: ["healthcare", "caregiving", "maritime", "oilgas"]
+    },
+    {
+      id: "wilderness", cats: ["industry"], hours: 16,
+      duration: { en: "2 days", sw: "Siku 2" }, price: 250000,
+      name: { en: "Outdoor / Wilderness First Aid", sw: "Huduma ya Kwanza ya Nje ya Nyumba / Mwitu" },
+      audience: { en: "Safari guides, tour & mountaineering guides, camp staff, adventure companies, outdoor clubs", sw: "Miongozi wa safari, watalii na milima, wafanyakazi wa kambi, kampuni za adventure" },
+      topics: ["outdoorAssessment", "snakeBites", "insectBites", "heatIllness", "dehydration", "burns", "fractures", "bleeding", "sprainsStrains", "drowning", "hypothermia", "evacuation", "improvisedSplinting", "remoteManagement"],
+      roles: ["hospitality", "coach"], env: ["outdoors"]
+    },
+    {
+      id: "mining", cats: ["industry"], hours: 24,
+      duration: { en: "3 days", sw: "Siku 3" }, price: 300000,
+      name: { en: "Mining & Heavy Industry First Aid", sw: "Huduma ya Kwanza ya Madini na Viwanda Nzito" },
+      audience: { en: "Mining companies, quarry operators, heavy manufacturing, energy, large construction", sw: "Makampuni ya madini, machimbo, viwanda nzito, nishati, ujenzi mkubwa" },
+      topics: ["miningInjuries", "crushInjuries", "heavyMachinery", "chemicalExposure", "electricalInjuries", "confinedSpace", "fallsHeight", "heatIllness", "severeBleeding", "multipleCasualty", "evacuation", "simulations"],
+      roles: ["industrial"], env: ["industrial"]
+    }
+  ];
+
+  /* ---------- corporate & group packages ---------- */
+  var PACKAGES = [
+    {
+      id: "sme", group: 15, price: 1500000, popular: false,
+      name: { en: "RDK SME Safety Package", sw: "Paket ya Usalama ya RDK — SME" },
+      audience: { en: "Small & medium businesses", sw: "Biashara ndogo na wastani" },
+      features: {
+        en: ["Training for up to 15 employees", "Practical assessment", "Certificates for all participants", "First aid awareness materials", "Emergency response guide"],
+        sw: ["Mafunzo kwa wafanyakazi hadi 15", "Tathmini ya vitendo", "Vyeti kwa washiriki wote", "Vifaa vya uelewa wa huduma ya kwanza", "Mwongozo wa mwitikio wa dharura"]
+      }
+    },
+    {
+      id: "corporate", group: 20, price: 3000000, popular: true,
+      name: { en: "RDK Corporate First Aid Package", sw: "Paket ya Huduma ya Kwanza ya RDK — Makampuni" },
+      audience: { en: "Corporate businesses", sw: "Makampuni makubwa" },
+      features: {
+        en: ["Workplace first aid for up to 20 employees", "CPR & AED training", "Emergency response planning", "Practical scenarios", "Certificates", "Workplace first aid assessment"],
+        sw: ["Huduma ya kwanza kazini kwa wafanyakazi hadi 20", "Mafunzo ya CPR na AED", "Upangaji wa mwitikio wa dharura", "Mazoezi ya vitendo", "Vyeti", "Kupima usalama wa ofisi"]
+      }
+    },
+    {
+      id: "industrial-package", group: null, price: 5000000, priceNote: {
+        en: "From — final quote depends on participants, travel and site",
+        sw: "Kuanzia — bei ya mwisho inategemea washiriki, usafiri na eneo"
+      },
+      name: { en: "RDK Industrial Safety Package", sw: "Paket ya Usalama ya RDK — Viwanda" },
+      audience: { en: "Factories, mining, energy & construction", sw: "Viwanda, madini, nishati na ujenzi" },
+      features: {
+        en: ["Workplace emergency assessment", "First aid kit assessment", "Emergency response plan", "CPR/AED training", "Practical simulations", "Staff certification"],
+        sw: ["Kupima dharura za mahali pa kazi", "Kupima sanduku la huduma ya kwanza", "Mpango wa mwitikio wa dharura", "Mafunzo ya CPR/AED", "Mazoezi ya vitendo", "Uidhinishaji wa wafanyakazi"]
+      }
+    },
+    {
+      id: "school", group: 15, price: 1500000, popular: false,
+      name: { en: "School First Aid Package", sw: "Paket ya Huduma ya Kwanza — Shule" },
+      audience: { en: "Schools & daycare centres", sw: "Shule na vituo vya malezi" },
+      features: {
+        en: ["Training for up to 15 staff", "Playground, sports & classroom emergencies", "Certificates for all participants", "Emergency evacuation basics"],
+        sw: ["Mafunzo kwa wafanyakazi hadi 15", "Dharura za uwanja, michezo na darasa", "Vyeti kwa washiriki wote", "Misingi ya uhamishaji wa dharura"]
+      }
+    }
+  ];
+
+  /* ---------- exports ---------- */
+  window.RDK = {
+    topics: T,
+    categories: CATEGORIES,
+    courses: COURSES,
+    packages: PACKAGES,
+    courseById: function (id) {
+      for (var i = 0; i < COURSES.length; i++) if (COURSES[i].id === id) return COURSES[i];
+      return null;
+    },
+    topicList: function (course, lang) {
+      var out = [];
+      for (var i = 0; i < course.topics.length; i++) {
+        var t = T[course.topics[i]];
+        if (t) out.push(t[lang] || t.en);
+      }
+      return out;
+    },
+    price: function (tzs) {
+      return "TZS " + Number(tzs).toLocaleString("en-GB");
+    }
+  };
+})();
