@@ -4,18 +4,17 @@
    ============================================================ */
 window.RDK_CONFIG = {
   // WhatsApp number in international format, digits only.
-  // Leave "" until the real number is provided — WhatsApp buttons
-  // automatically fall back to the email link below.
-  whatsapp: "",               // e.g. "255712345678"
-  whatsappDisplay: "",        // e.g. "+255 712 345 678" (shown as text)
+  whatsapp: "255684114433",
+  whatsappDisplay: "+255 684 114 433",
 
   email: "info@rdk.co.tz",
 
-  // Social profiles — replace with the real account URLs/handles when ready.
+  // Social profiles — paste the Facebook / TikTok URLs when ready;
+  // empty entries simply hide the icon.
   social: {
-    instagram: "https://www.instagram.com/rdkemergencycare",
-    facebook: "https://www.facebook.com/rdkemergencycare",
-    tiktok: "https://www.tiktok.com/@rdkemergencycare"
+    instagram: "https://www.instagram.com/rdk.co.tz",
+    facebook: "",
+    tiktok: ""
   },
   office: {
     line1: "Kigamboni",
