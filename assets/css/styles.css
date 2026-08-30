@@ -129,9 +129,9 @@ p { margin: 0 0 1em; }
   background:
     radial-gradient(1100px 500px at 85% -10%, var(--brand-soft), transparent 65%),
     linear-gradient(180deg, #F7FAFD 0%, #fff 100%);
-  padding: clamp(3.2rem, 8vw, 6rem) 0 clamp(3rem, 7vw, 5rem);
+  padding: clamp(3.2rem, 8vw, 6rem) 0 clamp(2.4rem, 5vw, 3.6rem);
 }
-.hero-grid { display: grid; gap: 2.5rem; align-items: center; }
+.hero-grid { display: grid; gap: 2.5rem; align-items: stretch; }
 @media (min-width: 900px) { .hero-grid { grid-template-columns: 1.25fr .9fr; } }
 .hero-badge {
   display: inline-flex; align-items: center; gap: .45rem;
@@ -150,9 +150,11 @@ p { margin: 0 0 1em; }
 .hero-card {
   background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
   box-shadow: var(--shadow-lg); overflow: hidden;
+  display: flex; flex-direction: column; align-self: stretch;
 }
 .hero-card img.hero-photo {
-  width: 100%; aspect-ratio: 3 / 2; object-fit: cover; display: block;
+  width: 100%; flex: 1 1 auto; min-height: 180px;
+  height: auto; object-fit: cover; display: block;
 }
 .hero-emph {
   color: var(--accent); font-weight: 800; font-size: 1.12rem;
