@@ -151,7 +151,13 @@ p { margin: 0 0 1em; }
   background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
   box-shadow: var(--shadow-lg); overflow: hidden;
 }
-.hero-card img { width: 100%; height: 100%; object-fit: cover; }
+.hero-card img.hero-photo {
+  width: 100%; aspect-ratio: 3 / 2; object-fit: cover; display: block;
+}
+.hero-emph {
+  color: var(--accent); font-weight: 800; font-size: 1.12rem;
+  line-height: 1.4; margin: 0;
+}
 .hero-card-caption {
   padding: .8rem 1.1rem; display: flex; align-items: center; gap: .6rem;
   font-size: .85rem; color: var(--ink-soft); border-top: 1px solid var(--line);
@@ -436,6 +442,66 @@ p { margin: 0 0 1em; }
   background: var(--brand-soft); border: 1px solid #C7DDF0; border-radius: var(--radius-sm);
   padding: .9rem 1.1rem; font-size: .9rem; margin-top: 1rem; color: var(--brand-deep);
 }
+
+/* ---------- work-abroad sectors ---------- */
+.sector-card .course-meta a.pill { text-decoration: none; font-size: .8rem; }
+.sector-card .course-meta a.pill:hover { background: var(--brand); color: #fff; }
+
+/* ---------- about: leaders ---------- */
+.leader-card img {
+  width: 100%; aspect-ratio: 4 / 4.6; object-fit: cover;
+  border-radius: var(--radius-sm); margin-bottom: .4rem;
+}
+.initials-avatar {
+  width: 100%; aspect-ratio: 4 / 4.6; border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--brand-soft), var(--brand));
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 3rem; font-weight: 800; letter-spacing: .05em; margin-bottom: .4rem;
+}
+
+/* ---------- contact ---------- */
+.contact-grid { display: grid; gap: 1.4rem; align-items: start; }
+@media (min-width: 900px) { .contact-grid { grid-template-columns: .8fr 1.2fr; } }
+.contact-line { display: flex; gap: .9rem; align-items: flex-start; margin-top: 1.1rem; }
+.contact-line .chip { margin: 0; flex: none; width: 40px; height: 40px; }
+.form-field { margin-bottom: 1rem; }
+.form-field label {
+  display: block; font-size: .85rem; font-weight: 600; margin-bottom: .35rem; color: var(--ink);
+}
+.form-field input, .form-field select, .form-field textarea {
+  width: 100%; padding: .75rem .9rem; font: 500 .95rem var(--font);
+  color: var(--ink); background: #fff; border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm); transition: .15s ease;
+}
+.form-field input:focus, .form-field select:focus, .form-field textarea:focus {
+  outline: 3px solid rgba(59, 131, 196, .3); border-color: var(--brand);
+}
+
+/* ---------- quiz lead capture ---------- */
+.lead-box { margin-top: 1.6rem; border-style: dashed; }
+.lead-box h4 { margin-bottom: .3em; }
+.lead-fields { display: grid; gap: .7rem; }
+@media (min-width: 560px) { .lead-fields { grid-template-columns: 1fr 1.4fr; } }
+.lead-fields input {
+  width: 100%; padding: .7rem .9rem; font: 500 .92rem var(--font);
+  border: 1.5px solid var(--line); border-radius: var(--radius-sm);
+  color: var(--ink); background: #fff;
+}
+.lead-fields input:focus { outline: 3px solid rgba(59, 131, 196, .3); border-color: var(--brand); }
+.lead-status { font-size: .84rem; margin: .6rem 0 0; min-height: 1.1em; }
+.lead-status.is-ok { color: var(--accent); font-weight: 600; }
+.lead-status.is-bad { color: var(--danger); font-weight: 600; }
+
+/* ---------- social icons ---------- */
+.social-row { display: flex; gap: .6rem; margin-top: 1rem; }
+.social-row a {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: 50%;
+  background: rgba(255, 255, 255, .12); color: #fff;
+  transition: .16s ease;
+}
+.social-row a:hover { transform: translateY(-3px); background: #fff; color: var(--brand-deep); }
+.social-row svg { width: 18px; height: 18px; }
 
 /* ---------- utilities ---------- */
 .mt-1 { margin-top: .5rem; } .mt-2 { margin-top: 1rem; } .mt-3 { margin-top: 1.75rem; }

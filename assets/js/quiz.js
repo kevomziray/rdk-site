@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    RDK Emergency Care — "Find Your Training" quiz
    5-question wizard with weighted scoring over RDK.courses,
    a corporate/group branch and a work-abroad branch.
@@ -81,7 +81,57 @@
 
   var step = 0;
   var answers = {};
+  var lead = { name: "", contact: "" };
   var el = function (id) { return document.getElementById(id); };
+
+  /* optional lead details appended to every booking message */
+  function leadSuffix() {
+    var parts = [];
+    if (lead.name) parts.push(lead.name);
+    if (lead.contact) parts.push(lead.contact);
+    return parts.length ? "\n\n— " + parts.join(" · ") : "";
+  }
+  function leadValid() {
+    var c = lead.contact.trim();
+    var emailOk = /^\S+@\S+\.\S+$/.test(c);
+    var digits = c.replace(/\D/g, "");
+    var phoneOk = digits.length >= 9 && digits.length <= 15;
+    return { contact: emailOk || phoneOk, name: lead.name.trim().length >= 2 };
+  }
+  function updateLeadLinks() {
+    var links = document.querySelectorAll("a.lead-aware");
+    var ok = leadValid();
+    var use = ok.contact && ok.name;
+    for (var i = 0; i < links.length; i++) {
+      var base = links[i].getAttribute("data-base") || "";
+      links[i].href = window.rdkWhatsApp(use ? base + leadSuffix() : base);
+    }
+    var status = el("lead-status");
+    if (status) {
+      if (!lead.name && !lead.contact) { status.textContent = ""; status.className = "lead-status"; }
+      else if (use) { status.textContent = t("quiz.lead.ok"); status.className = "lead-status is-ok"; }
+      else { status.textContent = t("quiz.lead.bad"); status.className = "lead-status is-bad"; }
+    }
+  }
+  function leadBoxHTML() {
+    return (
+      '<div class="card lead-box">' +
+      "<h4>" + esc(t("quiz.lead.title")) + "</h4>" +
+      '<p class="muted" style="font-size:.86rem;">' + esc(t("quiz.lead.note")) + "</p>" +
+      '<div class="lead-fields">' +
+      '<input type="text" id="lead-name" placeholder="' + esc(t("quiz.lead.name")) + '" autocomplete="name" value="' + esc(lead.name) + '">' +
+      '<input type="text" id="lead-contact" placeholder="' + esc(t("quiz.lead.contact")) + '" autocomplete="email" value="' + esc(lead.contact) + '">' +
+      "</div>" +
+      '<p class="lead-status" id="lead-status" role="status"></p>' +
+      "</div>"
+    );
+  }
+  function wireLeadBox() {
+    var n = el("lead-name"), c = el("lead-contact");
+    if (!n || !c) return;
+    n.addEventListener("input", function () { lead.name = n.value; updateLeadLinks(); });
+    c.addEventListener("input", function () { lead.contact = c.value; updateLeadLinks(); });
+  }
 
   function t(k) { return window.t ? window.t(k) : k; }
   function lang() { return window.RDK_I18N ? window.RDK_I18N.getLang() : "en"; }
@@ -202,8 +252,8 @@
         return "<li>" + esc(t("quiz.why." + w)) + "</li>";
       }).join("") + "</ul>" : '<p class="muted" style="font-size:.9rem;margin-top:.5rem;">' + esc(bi(c.audience)) + "</p>") +
       '<div class="quiz-result-actions">' +
-      '<a class="btn ' + (best ? "btn-accent" : "btn-primary") + '" target="_blank" rel="noopener" href="' +
-      window.rdkWhatsApp(msg) + '">' + esc(t("cta.book")) + "</a>" +
+      '<a class="btn lead-aware ' + (best ? "btn-accent" : "btn-primary") + '" target="_blank" rel="noopener" data-base="' + esc(msg) + '" href="' +
+      window.rdkWhatsApp(msg + leadSuffix()) + '">' + esc(t("cta.book")) + "</a>" +
       (best ? '<a class="btn btn-outline" href="training.html">' + esc(t("quiz.results.allCourses")) + "</a>" : "") +
       "</div></div>"
     );
@@ -228,8 +278,10 @@
         (pkg.group ? "<li>≈ " + window.RDK.price(perHead) + " / " + esc(t("misc.perPerson")) + "</li>" : "") +
         "</ul>" +
         '<div class="quiz-result-actions">' +
-        '<a class="btn btn-accent" target="_blank" rel="noopener" href="' +
-        window.rdkWhatsApp((lang() === "sw" ? "Habari RDK! Naomba bei ya paket: " : "Hello RDK! Quote request for: ") + bi(pkg.name)) +
+        '<a class="btn btn-accent lead-aware" target="_blank" rel="noopener" data-base="' +
+        esc((lang() === "sw" ? "Habari RDK! Naomba bei ya pakeji: " : "Hello RDK! Quote request for: ") + bi(pkg.name)) +
+        '" href="' +
+        window.rdkWhatsApp((lang() === "sw" ? "Habari RDK! Naomba bei ya pakeji: " : "Hello RDK! Quote request for: ") + bi(pkg.name) + leadSuffix()) +
         '">' + esc(t("packages.cta")) + "</a></div></div>";
 
       html += '<h3 style="margin-top:1.4rem;">' + esc(t("quiz.results.alternatives")) + "</h3>";
@@ -252,12 +304,15 @@
         '<a class="btn btn-outline" href="work-abroad.html">' + esc(t("quiz.results.abroadCta")) + "</a></div>";
     }
 
+    html += leadBoxHTML();
+
     html += '<div class="quiz-result-actions">' +
       '<button type="button" class="btn btn-ghost" id="quiz-restart">' + esc(t("quiz.results.restart")) + "</button></div>";
 
     el("quiz-body").innerHTML = html;
+    wireLeadBox();
     el("quiz-restart").addEventListener("click", function () {
-      step = 0; answers = {}; renderQuestion();
+      step = 0; answers = {}; lead = { name: "", contact: "" }; renderQuestion();
     });
     document.dispatchEvent(new CustomEvent("rdk:quiz-result", { detail: { top: ranked[0].course.id } }));
   }

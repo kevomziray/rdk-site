@@ -58,6 +58,22 @@
   }
 
   /* ---------- footer ---------- */
+  function socialRowHTML() {
+    var s = window.RDK_CONFIG.social || {};
+    var icon = function (label, href, svg) {
+      if (!href) return "";
+      return '<a href="' + esc(href) + '" target="_blank" rel="noopener" aria-label="' + label +
+        '" title="' + label + '">' + svg + "</a>";
+    };
+    return '<div class="social-row">' +
+      icon("Instagram", s.instagram,
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg>') +
+      icon("Facebook", s.facebook,
+        '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14 8h2.5V4.5H14c-2.5 0-4 1.6-4 4V11H7.5v3H10v8h3.5v-8h2.6l.4-3h-3V9c0-.6.4-1 1-1z"/></svg>') +
+      icon("TikTok", s.tiktok,
+        '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 1 1-2.59-2.59c.27 0 .53.04.77.12V9.77a5.76 5.76 0 0 0-.77-.05 5.66 5.66 0 1 0 5.66 5.66V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3a4.28 4.28 0 0 1-3.22-1.48z"/></svg>') +
+      "</div>";
+  }
   function renderFooter() {
     var mount = document.getElementById("footer-mount");
     if (!mount) return;
@@ -72,6 +88,7 @@
       '<img class="footer-logo" src="assets/img/rdk-logo.png" alt="RDK Emergency Care" width="82" height="59">' +
       '<p data-i18n="footer.about"></p>' +
       '<p class="footer-motto" data-i18n="footer.motto"></p>' +
+      socialRowHTML() +
       "</div>" +
       "<div><h4 data-i18n=\"footer.quickLinks\"></h4><ul>" +
       '<li><a href="training.html" data-i18n="nav.training"></a></li>' +
@@ -128,7 +145,7 @@
       ? "Habari RDK! Nataka kuweka nafasi ya kozi: "
       : "Hello RDK! I would like to book the course: ") + name + " (" + window.RDK.price(c.price) + ").";
     return (
-      '<article class="card course-card">' +
+      '<article class="card course-card" id="course-' + esc(c.id) + '">' +
       '<div class="course-head"><h3>' + esc(name) + '</h3>' +
       '<span class="pill price">' + window.RDK.price(c.price) + "</span></div>" +
       '<div class="course-meta"><span class="pill outline">' + esc(bi(c.duration)) + '</span>' +
@@ -222,6 +239,7 @@
     renderPackages();
     renderFilterChips();
     renderCourseGrid();
+    renderSectors();
     var chips = document.getElementById("filter-chips");
     if (chips) {
       chips.addEventListener("click", function (e) {
@@ -237,7 +255,43 @@
       renderPackages();
       renderFilterChips();
       renderCourseGrid();
+      renderSectors();
     });
+  }
+
+  /* ---------- work-abroad sectors ---------- */
+  var ABROAD_SECTORS = [
+    { id: "healthcare", icon: "🏥", courses: ["cpr-aed-bls", "standard-first-aid", "child-infant"] },
+    { id: "oilgas", icon: "🛢️", courses: ["industrial", "comprehensive", "cpr-aed-bls"] },
+    { id: "maritime", icon: "🚢", courses: ["cpr-aed-bls", "hospitality-tourism"] },
+    { id: "hospitality", icon: "🏨", courses: ["hospitality-tourism", "standard-first-aid"] },
+    { id: "construction", icon: "🏗️", courses: ["construction", "industrial"] },
+    { id: "childcare", icon: "🧸", courses: ["child-infant", "standard-first-aid"] },
+    { id: "security", icon: "🛡️", courses: ["security-first-aid", "cpr-aed-bls"] }
+  ];
+
+  function sectorCardHTML(sector) {
+    var courseLinks = sector.courses.map(function (cid) {
+      var c = window.RDK.courseById(cid);
+      if (!c) return "";
+      return '<a class="pill" href="training.html#course-' + cid + '">' + esc(bi(c.name)) + "</a>";
+    }).join("");
+    return (
+      '<article class="card sector-card reveal">' +
+      '<span class="chip green" style="font-size:1.3rem;">' + sector.icon + "</span>" +
+      "<h3>" + esc(window.t("sec." + sector.id + ".t")) + "</h3>" +
+      '<p class="muted">' + esc(window.t("sec." + sector.id + ".d")) + "</p>" +
+      '<p class="muted mb-0" style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;">' +
+      esc(window.t("abroadPage.coursesLabel")) + "</p>" +
+      '<div class="course-meta" style="margin-top:.5rem;">' + courseLinks + "</div>" +
+      "</article>"
+    );
+  }
+
+  function renderSectors() {
+    var mount = document.getElementById("sectors-grid");
+    if (!mount) return;
+    mount.innerHTML = ABROAD_SECTORS.map(sectorCardHTML).join("");
   }
 
   /* ---------- behaviours ---------- */

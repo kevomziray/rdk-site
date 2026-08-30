@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact — RDK Emergency Care</title>
+  <meta name="description" content="Book a first-aid course, request a corporate quote, or ask RDK Emergency Care anything. Based in Kigamboni, Dar es Salaam.">
+  <link rel="icon" type="image/png" href="assets/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+
+  <div id="nav-mount"></div>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow" data-i18n="contact.eyebrow"></span>
+      <h1 data-i18n="contact.title"></h1>
+      <p class="lead" data-i18n="contact.sub"></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="contact-grid">
+        <!-- Info card -->
+        <aside class="card" id="contact-info">
+          <h3 data-i18n="contact.infoTitle"></h3>
+          <div class="contact-line">
+            <span class="chip">✉️</span>
+            <div>
+              <strong data-i18n="contact.emailLabel"></strong>
+              <p class="muted mb-0"><a id="contact-email-link" href="mailto:info@rdk.co.tz">info@rdk.co.tz</a></p>
+            </div>
+          </div>
+          <div class="contact-line">
+            <span class="chip green">📍</span>
+            <div>
+              <strong data-i18n="contact.officeLabel"></strong>
+              <p class="muted mb-0">Kigamboni<br>P.O. Box Kigamboni<br>Dar es Salaam, Tanzania</p>
+            </div>
+          </div>
+          <div class="contact-line">
+            <span class="chip">🕒</span>
+            <div>
+              <strong data-i18n="contact.hoursLabel"></strong>
+              <p class="muted mb-0" data-i18n="contact.hoursValue"></p>
+            </div>
+          </div>
+          <div id="contact-wa-slot"></div>
+        </aside>
+
+        <!-- Form card -->
+        <div class="card">
+          <h3 data-i18n="contact.formTitle"></h3>
+          <form id="contact-form" novalidate>
+            <div class="form-field">
+              <label for="cf-name" data-i18n="contact.name"></label>
+              <input type="text" id="cf-name" name="name" autocomplete="name" required>
+            </div>
+            <div class="form-field">
+              <label for="cf-contact" data-i18n="contact.emailOrPhone"></label>
+              <input type="text" id="cf-contact" name="contact" autocomplete="email" required>
+            </div>
+            <div class="form-field">
+              <label for="cf-interest" data-i18n="contact.interest"></label>
+              <select id="cf-interest" name="interest">
+                <option value="course" data-i18n="contact.interest.course"></option>
+                <option value="group" data-i18n="contact.interest.group"></option>
+                <option value="service" data-i18n="contact.interest.service"></option>
+                <option value="other" data-i18n="contact.interest.other"></option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="cf-message" data-i18n="contact.message"></label>
+              <textarea id="cf-message" name="message" rows="4" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg" data-i18n="contact.send"></button>
+            <p class="muted mt-2 mb-0" style="font-size:.82rem;" data-i18n="contact.formNote"></p>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="footer-mount"></div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/i18n.js"></script>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script>
+    /* Contact form → mailto composer (no backend needed) */
+    document.addEventListener("DOMContentLoaded", function () {
+      var form = document.getElementById("contact-form");
+      if (!form) return;
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var name = document.getElementById("cf-name").value.trim();
+        var contact = document.getElementById("cf-contact").value.trim();
+        var interest = document.getElementById("cf-interest");
+        var interestText = interest.options[interest.selectedIndex].textContent;
+        var message = document.getElementById("cf-message").value.trim();
+        var subject = (window.t ? window.t("contact.subject") : "Website enquiry") + " — " + interestText;
+        var body = message + "\n\n— " + name + "\n" + contact;
+        var url = "mailto:" + window.RDK_CONFIG.email +
+          "?subject=" + encodeURIComponent(subject) +
+          "&body=" + encodeURIComponent(body);
+        window.location.href = url;
+      });
+      /* WhatsApp button in the info card when a number is configured */
+      var slot = document.getElementById("contact-wa-slot");
+      if (slot && window.RDK_CONFIG.whatsapp) {
+        slot.innerHTML = '<div class="contact-line"><span class="chip green" style="background:#E7F9EC;color:#1FB855;">💬</span><div><strong>WhatsApp</strong>' +
+          '<p class="muted mb-0"><a target="_blank" rel="noopener" href="' +
+          window.rdkWhatsApp("Hello RDK Emergency Care!") + '">' +
+          window.RDK_CONFIG.whatsappDisplay + "</a></p></div></div>";
+      }
+    });
+  </script>
+</body>
+</html>

@@ -10,6 +10,13 @@ window.RDK_CONFIG = {
   whatsappDisplay: "",        // e.g. "+255 712 345 678" (shown as text)
 
   email: "info@rdk.co.tz",
+
+  // Social profiles — replace with the real account URLs/handles when ready.
+  social: {
+    instagram: "https://www.instagram.com/rdkemergencycare",
+    facebook: "https://www.facebook.com/rdkemergencycare",
+    tiktok: "https://www.tiktok.com/@rdkemergencycare"
+  },
   office: {
     line1: "Kigamboni",
     line2: "P.O. Box Kigamboni",
