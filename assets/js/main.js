@@ -256,6 +256,7 @@
       renderFilterChips();
       renderCourseGrid();
       renderSectors();
+      observeReveals();
     });
   }
 
@@ -295,6 +296,25 @@
   }
 
   /* ---------- behaviours ---------- */
+  var revealIO = null;
+  if ("IntersectionObserver" in window) {
+    revealIO = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) { en.target.classList.add("is-in"); revealIO.unobserve(en.target); }
+      });
+    }, { threshold: 0.12 });
+  }
+  /* observe every .reveal that is not revealed yet — safe to call again
+     after dynamic content has been (re)rendered */
+  function observeReveals() {
+    document.querySelectorAll(".reveal:not(.is-in)").forEach(function (el) {
+      var rect = el.getBoundingClientRect();
+      var aboveViewport = rect.bottom < 0; /* scrolled past — observer would never fire */
+      if (!revealIO || aboveViewport) el.classList.add("is-in");
+      else revealIO.observe(el);
+    });
+  }
+
   function wireBehaviours() {
     var burger = document.getElementById("nav-burger");
     var links = document.getElementById("nav-links");
@@ -312,17 +332,6 @@
         window.RDK_I18N.setLang(b.getAttribute("data-lang-btn"));
       });
     });
-    /* scroll reveal */
-    if ("IntersectionObserver" in window) {
-      var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (en) {
-          if (en.isIntersecting) { en.target.classList.add("is-in"); io.unobserve(en.target); }
-        });
-      }, { threshold: 0.12 });
-      document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
-    } else {
-      document.querySelectorAll(".reveal").forEach(function (el) { el.classList.add("is-in"); });
-    }
   }
 
   /* ---------- boot ---------- */
@@ -332,6 +341,7 @@
     renderWaFloat();
     wireBehaviours();
     wireDynamicContent();
+    observeReveals();
     /* i18n ran first (its own DOMContentLoaded); re-apply to freshly rendered chrome */
     if (window.RDK_I18N) window.RDK_I18N.apply(document);
   });
