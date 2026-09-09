@@ -194,7 +194,7 @@
     var mount = document.getElementById("featured-courses");
     if (!mount) return;
     mount.innerHTML = window.RDK.courses
-      .filter(function (c) { return c.featured; })
+      .filter(function (c) { return c.featured && !c.hidden; })
       .map(courseCardHTML).join("");
   }
 
@@ -227,7 +227,7 @@
     var mount = document.getElementById("courses-grid");
     if (!mount) return;
     var list = window.RDK.courses.filter(function (c) {
-      return trainingFilter === "all" || c.cats.indexOf(trainingFilter) !== -1;
+      return !c.hidden && (trainingFilter === "all" || c.cats.indexOf(trainingFilter) !== -1);
     });
     mount.innerHTML = list.map(courseCardHTML).join("");
     var count = document.getElementById("result-count");

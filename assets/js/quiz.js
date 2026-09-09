@@ -84,7 +84,7 @@
     var exp = answers.experience;
     var budget = TIME_BUDGET[answers.time] || 99;
 
-    return window.RDK.courses.map(function (c) {
+    return window.RDK.courses.filter(function (c) { return !c.hidden; }).map(function (c) {
       var s = 0, why = [];
       if (c.roles && c.roles.indexOf(role) !== -1) { s += 4; why.push("role"); }
       if (c.roles && c.roles.indexOf("general") !== -1 && role === "student") { s += 2; }

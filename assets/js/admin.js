@@ -31,7 +31,8 @@
       config: null  /* parsed window.RDK_CONFIG */
     },
     dirty: { data: false, i18n: false, config: false },
-    tab: "overview"
+    tab: "overview",
+    ui: {} /* per-tab view state (edit modes, filters) */
   };
 
   /* ======================= tiny helpers ======================= */
@@ -404,12 +405,16 @@
     updateSavePill();
   }
 
+  function pendingUploads() {
+    return (state.ui.photos && state.ui.photos.uploads) || [];
+  }
+
   function updateSavePill() {
     var btn = $("#adm-save");
     if (!btn) return;
-    var n = dirtyCount();
+    var n = dirtyCount() + pendingUploads().length;
     if (n === 0) { btn.textContent = "No changes"; btn.className = "adm-save-pill is-clean"; btn.disabled = true; }
-    else { btn.textContent = "Review & save (" + n + " file" + (n > 1 ? "s" : "") + ")"; btn.className = "adm-save-pill"; btn.disabled = false; }
+    else { btn.textContent = "Review & save (" + n + " change" + (n > 1 ? "s" : "") + ")"; btn.className = "adm-save-pill"; btn.disabled = false; }
   }
 
   /* ---------- login view ---------- */
@@ -524,11 +529,11 @@
   var TABS = [
     { id: "overview", label: "Overview" },
     { id: "settings", label: "Settings" },
-    { id: "courses", label: "Courses", soon: true },
-    { id: "packages", label: "Packages", soon: true },
-    { id: "vocab", label: "Categories & Topics", soon: true },
-    { id: "text", label: "Site text", soon: true },
-    { id: "photos", label: "Photos", soon: true }
+    { id: "courses", label: "Courses" },
+    { id: "packages", label: "Packages" },
+    { id: "vocab", label: "Categories & Topics" },
+    { id: "text", label: "Site text" },
+    { id: "photos", label: "Photos" }
   ];
 
   function renderSide() {
@@ -583,6 +588,11 @@
     var main = $("#adm-main");
     if (state.tab === "overview") renderOverview(main);
     else if (state.tab === "settings") renderSettings(main);
+    else if (state.tab === "courses") renderCourses(main);
+    else if (state.tab === "packages") renderPackages(main);
+    else if (state.tab === "vocab") renderVocab(main);
+    else if (state.tab === "text") renderText(main);
+    else if (state.tab === "photos") renderPhotos(main);
   }
 
   function fileStatusRow(label, key) {
@@ -678,22 +688,706 @@
     });
   }
 
-  /* ---------- save modal ---------- */
+  /* ---------- shared form helpers for bilingual model objects ---------- */
 
+  function biRow(label, obj, prop, rows1, rows2) {
+    var id = "f-" + prop + "-" + Math.floor(Math.random() * 1e6).toString(36);
+    var ta = function (lang, rows) {
+      var v = (obj[prop] && obj[prop][lang]) || "";
+      if (rows) return '<textarea id="' + id + "-" + lang + '" rows="' + rows + '">' + esc(v) + "</textarea>";
+      return '<input id="' + id + "-" + lang + '" value="' + esc(v) + '">';
+    };
+    return '<div class="adm-field"><label>' + esc(label) + '</label><div class="bi-pair">' +
+      '<div class="bi-cell"><span class="bi-lang">EN</span>' + ta("en", rows1) + "</div>" +
+      '<div class="bi-cell"><span class="bi-lang">SW</span>' + ta("sw", rows2 || rows1) + "</div>" +
+      "</div></div>";
+  }
+  function numRow(label, obj, prop, step) {
+    var id = "n-" + prop + "-" + Math.floor(Math.random() * 1e6).toString(36);
+    return '<div class="adm-field"><label for="' + id + '">' + esc(label) + "</label>" +
+      '<input type="number" id="' + id + '" step="' + (step || 1) + '" value="' + esc(obj[prop] == null ? "" : obj[prop]) + '"></div>';
+  }
+  function txtRow(label, obj, prop, ph) {
+    var id = "t-" + prop + "-" + Math.floor(Math.random() * 1e6).toString(36);
+    return '<div class="adm-field"><label for="' + id + '">' + esc(label) + "</label>" +
+      '<input id="' + id + '" value="' + esc(obj[prop] == null ? "" : obj[prop]) + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : "") + "></div>";
+  }
+  function checkRow(label, obj, prop, hint) {
+    var id = "c-" + prop + "-" + Math.floor(Math.random() * 1e6).toString(36);
+    return '<div class="adm-check"><input type="checkbox" id="' + id + '"' + (obj[prop] ? " checked" : "") + ">" +
+      '<label for="' + id + '">' + esc(label) + "</label>" + (hint ? '<span class="adm-note"> — ' + esc(hint) + "</span>" : "") + "</div>";
+  }
+  /* wire a generated input back into the model; skips helper controls
+     (search filters, checkbox lists wired separately) */
+  function wireInputs(root, apply) {
+    $$("input, textarea, select", root).forEach(function (el) {
+      if (el.getAttribute("data-cat") || el.getAttribute("data-topic") || el.id === "crs-topic-filter") return;
+      var handler = function () { apply(el); markDirty("data"); };
+      if (el.type === "checkbox" || el.tagName === "SELECT") el.addEventListener("change", handler);
+      else el.addEventListener("input", handler);
+    });
+  }
+
+  /* ======================= Courses tab ======================= */
+
+  var ROLE_HINT = "parent, teacher, office, hospitality, driver, security, industrial, healthcare, coach, student, abroad, general";
+  var ENV_HINT = "home, school, office, industrial, road, outdoors, public, events";
+
+  function renderCourses(main) {
+    var ui = state.ui.courses = state.ui.courses || { mode: "list", showArchived: false };
+    var courses = state.model.data.courses;
+    if (ui.mode === "edit") {
+      var isNew = ui.id === "__new__";
+      var c = isNew ? ui.draft : courses.filter(function (x) { return x.id === ui.id; })[0];
+      if (!c) { ui.mode = "list"; } else { return renderCourseEditor(main, c, isNew, ui); }
+    }
+    renderCourseList(main);
+  }
+
+  function renderCourseList(main) {
+    var ui = state.ui.courses;
+    var courses = state.model.data.courses;
+    var rows = courses.filter(function (c) { return ui.showArchived || !c.hidden; }).map(function (c) {
+      var flags =
+        (c.featured ? '<span class="adm-tag ok">featured</span>' : "") +
+        (c.abroad && c.abroad.length ? '<span class="adm-tag">abroad</span>' : "") +
+        (c.hidden ? '<span class="adm-tag warn">archived</span>' : "");
+      return "<tr" + (c.hidden ? ' class="is-archived"' : "") + ">" +
+        "<td><strong>" + esc(biText(c.name)) + "</strong><div class=\"adm-note\">" + esc(c.id) + "</div></td>" +
+        "<td>" + (c.price ? "TZS " + Number(c.price).toLocaleString("en-GB") : "—") + "</td>" +
+        "<td>" + esc(biText(c.duration)) + "</td>" +
+        "<td>" + (c.cats ? c.cats.length : 0) + " / " + (c.topics ? c.topics.length : 0) + "</td>" +
+        "<td>" + (flags || "—") + "</td>" +
+        '<td><button class="adm-btn ghost sm" data-edit="' + esc(c.id) + '">Edit</button></td>' +
+        "</tr>";
+    }).join("");
+    main.innerHTML =
+      "<h2>Courses</h2>" +
+      '<p class="lead">The training catalogue — shown on the home page, the training page and inside the quiz. Archiving hides a course everywhere without deleting it.</p>' +
+      '<div class="adm-panel adm-toolbar">' +
+      '<button class="adm-btn accent sm" id="crs-add">+ Add course</button>' +
+      '<label class="adm-check" style="margin-left:1rem;"><input type="checkbox" id="crs-arch"' + (ui.showArchived ? " checked" : "") + "> Show archived</label>" +
+      '<span class="adm-note">' + courses.length + " courses total</span>" +
+      "</div>" +
+      '<div class="adm-panel adm-tablewrap"><table class="adm-table"><thead><tr>' +
+      "<th>Course</th><th>Price</th><th>Duration</th><th>Cats/Topics</th><th>Flags</th><th></th>" +
+      "</tr></thead><tbody>" + (rows || '<tr><td colspan="6" class="adm-note">No courses.</td></tr>') + "</tbody></table></div>";
+    $("#crs-add").addEventListener("click", function () {
+      ui.mode = "edit";
+      ui.id = "__new__";
+      ui.draft = {
+        id: "", cats: [], hours: 8, price: 100000,
+        name: { en: "", sw: "" }, audience: { en: "", sw: "" }, duration: { en: "1 day", sw: "Siku 1" },
+        topics: [], roles: ["general"], env: []
+      };
+      renderTab();
+    });
+    $("#crs-arch").addEventListener("change", function () { ui.showArchived = this.checked; renderTab(); });
+    $$("[data-edit]", main).forEach(function (b) {
+      b.addEventListener("click", function () { ui.mode = "edit"; ui.id = b.getAttribute("data-edit"); renderTab(); });
+    });
+  }
+
+  function biText(o) { return o ? (o.en || o.sw || "") : ""; }
+
+  function renderCourseEditor(main, c, isNew, ui) {
+    var d = state.model.data;
+    var topicKeys = Object.keys(d.topics);
+    var catBoxes = d.categories.map(function (cat) {
+      return '<label class="adm-check"><input type="checkbox" data-cat="' + esc(cat.id) + '"' +
+        (c.cats.indexOf(cat.id) !== -1 ? " checked" : "") + "> " + esc(biText(cat.name)) + ' <span class="adm-note">(' + esc(cat.id) + ")</span></label>";
+    }).join("");
+
+    main.innerHTML =
+      '<h2>' + (isNew ? "Add course" : "Edit course") + "</h2>" +
+      '<p class="lead"><a href="#" id="crs-back">← Back to the course list</a></p>' +
+
+      '<div class="adm-panel"><h3>Basics</h3><div class="adm-grid2">' +
+      (isNew
+        ? txtRow("Course id (lowercase-with-dashes, permanent)", c, "id", "e.g. advanced-first-aid")
+        : '<div class="adm-field"><label>Course id</label><input value="' + esc(c.id) + '" disabled><p class="adm-note">The id is permanent — it is used in links.</p></div>') +
+      numRow("Price (TZS per person)", c, "price", 1000) +
+      numRow("Teaching hours (quiz time matching)", c, "hours", 0.5) +
+      "</div>" +
+      biRow("Course name", c, "name") +
+      biRow("Duration label (shown on cards)", c, "duration") +
+      biRow("Who it is for (audience line)", c, "audience") +
+      biRow("Optional note (e.g. bundle info — leave empty if none)", c, "note") +
+      "</div>" +
+
+      '<div class="adm-panel"><h3>Classification</h3>' +
+      '<div class="adm-field"><label>Categories</label><div class="adm-checkgrid">' + catBoxes + "</div></div>" +
+      txtRow("Quiz role tags (comma-separated)", c, "roles", ROLE_HINT) +
+      txtRow("Quiz environment tags (comma-separated)", c, "env", ENV_HINT) +
+      '<div class="adm-checkgrid">' +
+      checkRow("Featured on the home page", c, "featured") +
+      checkRow("Recognised for working abroad (quiz)", c, "abroadFlag") +
+      checkRow("Refresher course (quiz: “trained before”)", c, "refresher") +
+      checkRow("School-focused course", c, "school") +
+      checkRow("Archived — hide from the whole site", c, "hidden") +
+      "</div></div>" +
+
+      '<div class="adm-panel"><h3>Topics covered</h3>' +
+      '<div class="adm-field"><label>Filter topics</label><input id="crs-topic-filter" placeholder="Type to filter…"></div>' +
+      '<div class="adm-checkgrid adm-topics" id="crs-topics"></div>' +
+      '<p class="adm-note">Selected: <span id="crs-topic-count">' + c.topics.length + "</span> topics. Manage the vocabulary itself under Categories &amp; Topics.</p></div>" +
+
+      '<div class="adm-panel adm-toolbar">' +
+      '<button class="adm-btn accent" id="crs-save">Keep changes</button>' +
+      '<span class="adm-note">Changes are held in this tab until you press Review &amp; save at the top.</span>' +
+      "</div>";
+
+    /* ---- topics checkbox list with filter ---- */
+    function topicBoxes(filter) {
+      var f = (filter || "").toLowerCase();
+      return topicKeys.map(function (k) {
+        var t = d.topics[k];
+        var label = (t.en || "") + " / " + (t.sw || "");
+        if (f && k.indexOf(f) === -1 && label.toLowerCase().indexOf(f) === -1) return "";
+        return '<label class="adm-check"><input type="checkbox" data-topic="' + esc(k) + '"' +
+          (c.topics.indexOf(k) !== -1 ? " checked" : "") + "> <span>" + esc(t.en || k) + ' <span class="adm-note">' + esc(k) + "</span></span></label>";
+      }).join("") || '<p class="adm-note">No topic matches.</p>';
+    }
+    var topicBox = $("#crs-topics");
+    topicBox.innerHTML = topicBoxes("");
+    $("#crs-topic-filter").addEventListener("input", function () {
+      topicBox.innerHTML = topicBoxes(this.value);
+      wireTopicBoxes();
+    });
+    function wireTopicBoxes() {
+      $$("[data-topic]", topicBox).forEach(function (box) {
+        box.addEventListener("change", function () {
+          var k = box.getAttribute("data-topic");
+          var i = c.topics.indexOf(k);
+          if (box.checked && i === -1) c.topics.push(k);
+          if (!box.checked && i !== -1) c.topics.splice(i, 1);
+          c.topics = topicKeys.filter(function (tk) { return c.topics.indexOf(tk) !== -1; });
+          $("#crs-topic-count").textContent = c.topics.length;
+          markDirty("data");
+        });
+      });
+    }
+    wireTopicBoxes();
+
+    /* ---- wiring ---- */
+    wireInputs(main, function (el) {
+      var num = el.type === "number";
+      var v = num ? (el.value === "" ? null : Number(el.value)) : el.value;
+      if (el.id.indexOf("f-name-") === 0) c.name[el.id.slice(-2)] = el.value;
+      else if (el.id.indexOf("f-duration-") === 0) c.duration[el.id.slice(-2)] = el.value;
+      else if (el.id.indexOf("f-audience-") === 0) c.audience[el.id.slice(-2)] = el.value;
+      else if (el.id.indexOf("f-note-") === 0) {
+        c.note = c.note || {};
+        c.note[el.id.slice(-2)] = el.value;
+        if (!c.note.en && !c.note.sw) delete c.note;
+      } else if (el.id.indexOf("n-price-") === 0) c.price = v;
+      else if (el.id.indexOf("n-hours-") === 0) c.hours = v;
+      else if (el.id.indexOf("t-id-") === 0) c.id = el.value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-");
+      else if (el.id.indexOf("t-roles-") === 0) c.roles = el.value.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+      else if (el.id.indexOf("t-env-") === 0) c.env = el.value.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+      else if (el.id.indexOf("c-featured-") === 0) c.featured = el.checked;
+      else if (el.id.indexOf("c-abroadFlag-") === 0) c.abroad = el.checked ? (c.abroad && c.abroad.length ? c.abroad : ["general"]) : undefined;
+      else if (el.id.indexOf("c-refresher-") === 0) c.refresher = el.checked || undefined;
+      else if (el.id.indexOf("c-school-") === 0) c.school = el.checked || undefined;
+      else if (el.id.indexOf("c-hidden-") === 0) c.hidden = el.checked || undefined;
+    });
+    $$("[data-cat]", main).forEach(function (box) {
+      box.addEventListener("change", function () {
+        var k = box.getAttribute("data-cat");
+        var i = c.cats.indexOf(k);
+        if (box.checked && i === -1) c.cats.push(k);
+        if (!box.checked && i !== -1) c.cats.splice(i, 1);
+        markDirty("data");
+      });
+    });
+
+    $("#crs-back").addEventListener("click", function (e) { e.preventDefault(); state.ui.courses.mode = "list"; renderTab(); });
+    $("#crs-save").addEventListener("click", function () {
+      if (isNew) {
+        if (!/^[a-z0-9-]+$/.test(c.id || "")) { toast("Give the course a valid id first (lowercase letters, numbers, dashes).", true); return; }
+        if (!c.name.en && !c.name.sw) { toast("Give the course a name first.", true); return; }
+        if (state.model.data.courses.some(function (x) { return x.id === c.id; })) { toast("A course with this id already exists.", true); return; }
+        state.model.data.courses.push(c);
+        ui.id = c.id;
+        ui.draft = null;
+        toast("Course added to the list — remember to Review & save.");
+      } else {
+        toast("Changes kept — remember to Review & save.");
+      }
+      ui.mode = "list";
+      renderTab();
+    });
+  }
+
+  /* ======================= Packages tab ======================= */
+
+  function renderPackages(main) {
+    var ui = state.ui.packages = state.ui.packages || { mode: "list" };
+    var pkgs = state.model.data.packages;
+    if (ui.mode === "edit") {
+      var isNew = ui.id === "__new__";
+      var p = isNew ? ui.draft : pkgs.filter(function (x) { return x.id === ui.id; })[0];
+      if (!p) ui.mode = "list";
+      else return renderPackageEditor(main, p, isNew, ui);
+    }
+    var rows = pkgs.map(function (p) {
+      return "<tr><td><strong>" + esc(biText(p.name)) + "</strong><div class=\"adm-note\">" + esc(p.id) + "</div></td>" +
+        "<td>" + (p.group ? "up to " + p.group : "—") + "</td>" +
+        "<td>" + (p.price ? "TZS " + Number(p.price).toLocaleString("en-GB") + (p.priceNote ? "+" : "") : "—") + "</td>" +
+        "<td>" + (p.popular ? '<span class="adm-tag ok">most popular</span>' : "") + "</td>" +
+        '<td><button class="adm-btn ghost sm" data-edit="' + esc(p.id) + '">Edit</button></td></tr>';
+    }).join("");
+    main.innerHTML =
+      "<h2>Packages</h2>" +
+      '<p class="lead">Corporate & group offers shown on the home page, the training page and in quiz results for teams.</p>' +
+      '<div class="adm-panel adm-toolbar"><button class="adm-btn accent sm" id="pkg-add">+ Add package</button>' +
+      '<span class="adm-note">' + pkgs.length + " packages</span></div>" +
+      '<div class="adm-panel adm-tablewrap"><table class="adm-table"><thead><tr>' +
+      "<th>Package</th><th>Group</th><th>Price</th><th>Flags</th><th></th></tr></thead><tbody>" + rows + "</tbody></table></div>";
+    $("#pkg-add").addEventListener("click", function () {
+      ui.mode = "edit"; ui.id = "__new__";
+      ui.draft = {
+        id: "", group: 15, price: 1500000, popular: false,
+        name: { en: "", sw: "" }, audience: { en: "", sw: "" },
+        features: { en: [], sw: [] }
+      };
+      renderTab();
+    });
+    $$("[data-edit]", main).forEach(function (b) {
+      b.addEventListener("click", function () { ui.mode = "edit"; ui.id = b.getAttribute("data-edit"); renderTab(); });
+    });
+  }
+
+  function renderPackageEditor(main, p, isNew, ui) {
+    main.innerHTML =
+      "<h2>" + (isNew ? "Add package" : "Edit package") + "</h2>" +
+      '<p class="lead"><a href="#" id="pkg-back">← Back to the package list</a></p>' +
+      '<div class="adm-panel"><h3>Basics</h3>' +
+      (isNew ? txtRow("Package id (lowercase-with-dashes, permanent)", p, "id") :
+        '<div class="adm-field"><label>Package id</label><input value="' + esc(p.id) + '" disabled></div>') +
+      biRow("Package name", p, "name") +
+      biRow("Who it is for", p, "audience") +
+      '<div class="adm-grid2">' +
+      numRow("Group size (people included — leave empty if quote-based)", p, "group") +
+      numRow("Price (TZS)", p, "price", 100000) +
+      "</div>" +
+      biRow("Price note (optional “from…” line — leave empty if none)", p, "priceNote") +
+      '<div class="adm-checkgrid">' + checkRow("Show “Most popular” badge", p, "popular") + "</div></div>" +
+      '<div class="adm-panel"><h3>Feature list (one per line)</h3>' +
+      '<div class="adm-field"><label>Features — English</label>' +
+      '<textarea id="pkg-feat-en" rows="6">' + esc((p.features.en || []).join("\n")) + "</textarea></div>" +
+      '<div class="adm-field"><label>Features — Kiswahili</label>' +
+      '<textarea id="pkg-feat-sw" rows="6">' + esc((p.features.sw || []).join("\n")) + "</textarea></div>" +
+      "</div>" +
+      '<div class="adm-panel adm-toolbar"><button class="adm-btn accent" id="pkg-save">Keep changes</button>' +
+      '<span class="adm-note">Held in this tab until Review &amp; save.</span></div>';
+
+    wireInputs(main, function (el) {
+      if (el.id.indexOf("f-name-") === 0) p.name[el.id.slice(-2)] = el.value;
+      else if (el.id.indexOf("f-audience-") === 0) p.audience[el.id.slice(-2)] = el.value;
+      else if (el.id.indexOf("f-priceNote-") === 0) {
+        p.priceNote = p.priceNote || {};
+        p.priceNote[el.id.slice(-2)] = el.value;
+        if (!p.priceNote.en && !p.priceNote.sw) delete p.priceNote;
+      } else if (el.id === "pkg-feat-en") p.features.en = el.value.split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+      else if (el.id === "pkg-feat-sw") p.features.sw = el.value.split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+      else if (el.id.indexOf("n-group-") === 0) p.group = el.value === "" ? null : Number(el.value);
+      else if (el.id.indexOf("n-price-") === 0) p.price = el.value === "" ? null : Number(el.value);
+      else if (el.id.indexOf("t-id-") === 0) p.id = el.value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-");
+      else if (el.id.indexOf("c-popular-") === 0) p.popular = el.checked || undefined;
+    });
+
+    $("#pkg-back").addEventListener("click", function (e) { e.preventDefault(); state.ui.packages.mode = "list"; renderTab(); });
+    $("#pkg-save").addEventListener("click", function () {
+      if (isNew) {
+        if (!/^[a-z0-9-]+$/.test(p.id || "")) { toast("Give the package a valid id first.", true); return; }
+        if (state.model.data.packages.some(function (x) { return x.id === p.id; })) { toast("A package with this id already exists.", true); return; }
+        state.model.data.packages.push(p);
+        ui.id = p.id; ui.draft = null;
+      }
+      state.ui.packages.mode = "list";
+      renderTab();
+      toast("Kept — remember to Review & save.");
+    });
+  }
+
+  /* ======================= Categories & Topics tab ======================= */
+
+  function renderVocab(main) {
+    var d = state.model.data;
+    var ui = state.ui.vocab = state.ui.vocab || { filter: "" };
+    var usage = {};
+    d.courses.forEach(function (c) {
+      (c.topics || []).forEach(function (k) { usage[k] = (usage[k] || 0) + 1; });
+    });
+
+    var f = ui.filter.toLowerCase();
+    var topicKeys = Object.keys(d.topics).filter(function (k) {
+      if (!f) return true;
+      var t = d.topics[k];
+      return k.indexOf(f) !== -1 || (t.en || "").toLowerCase().indexOf(f) !== -1 || (t.sw || "").toLowerCase().indexOf(f) !== -1;
+    });
+
+    var catCards = d.categories.map(function (cat, idx) {
+      return '<div class="adm-panel" data-catcard="' + esc(cat.id) + '"><h3>' + esc(biText(cat.name)) +
+        ' <span class="adm-note">(' + esc(cat.id) + ")</span></h3>" +
+        biRow("Category name", cat, "name") +
+        biRow("Summary line", cat, "summary") +
+        txtRow("Icon name (reserved for future use)", cat, "icon") +
+        '<div class="adm-check"><input type="checkbox" id="cat-hidden-' + idx + '"' + (cat.hidden ? " checked" : "") + ">" +
+        '<label for="cat-hidden-' + idx + '">Hide this category and its filter chip</label></div>' +
+        "</div>";
+    }).join("");
+
+    var topicRows = topicKeys.map(function (k) {
+      var t = d.topics[k];
+      return "<tr><td><code>" + esc(k) + "</code></td>" +
+        '<td><input data-tk="' + esc(k) + '--en" value="' + esc(t.en || "") + '"></td>' +
+        '<td><input data-tk="' + esc(k) + '--sw" value="' + esc(t.sw || "") + '"></td>' +
+        "<td>" + (usage[k] || 0) + " course" + (usage[k] === 1 ? "" : "s") + "</td>" +
+        "<td>" + (usage[k] ? '<span class="adm-note">in use</span>' : '<button class="adm-btn danger sm" data-deltopic="' + esc(k) + '">Delete</button>') + "</td></tr>";
+    }).join("");
+
+    main.innerHTML =
+      "<h2>Categories & Topics</h2>" +
+      '<p class="lead">Categories are the catalogue filters. Topics are the shared EN/SW skill vocabulary reused across courses.</p>' +
+
+      '<div class="adm-panel"><h3>Categories</h3>' + catCards + "</div>" +
+
+      '<div class="adm-panel"><h3>Add a topic</h3><div class="adm-grid2">' +
+      txtRow("Topic key (camelCase, permanent)", ui, "newKey", "e.g. heatRash") +
+      "</div>" +
+      '<div class="adm-grid2">' +
+      '<div class="adm-field"><label>English</label><input id="voc-new-en"></div>' +
+      '<div class="adm-field"><label>Kiswahili</label><input id="voc-new-sw"></div>' +
+      "</div>" +
+      '<button class="adm-btn accent sm" id="voc-add">+ Add topic</button></div>' +
+
+      '<div class="adm-panel"><h3>Topics (' + Object.keys(d.topics).length + ")</h3>" +
+      '<div class="adm-field"><label>Filter</label><input id="voc-filter" value="' + esc(ui.filter) + '" placeholder="key or wording…"></div>' +
+      '<div class="adm-tablewrap adm-topics"><table class="adm-table"><thead><tr><th>Key</th><th>English</th><th>Kiswahili</th><th>Used by</th><th></th></tr></thead>' +
+      "<tbody>" + (topicRows || '<tr><td colspan="5" class="adm-note">No match.</td></tr>') + "</tbody></table></div></div>";
+
+    /* categories */
+    $$("[data-catcard]", main).forEach(function (card) {
+      var id = card.getAttribute("data-catcard");
+      var cat = d.categories.filter(function (x) { return x.id === id; })[0];
+      wireInputs(card, function (el) {
+        if (el.id.indexOf("f-name-") === 0) cat.name[el.id.slice(-2)] = el.value;
+        else if (el.id.indexOf("f-summary-") === 0) cat.summary[el.id.slice(-2)] = el.value;
+        else if (el.id.indexOf("t-icon-") === 0) cat.icon = el.value.trim();
+      });
+      var hide = $('input[type="checkbox"][id^="cat-hidden-"]', card);
+      var idx = Number(hide.id.replace("cat-hidden-", ""));
+      hide.addEventListener("change", function () {
+        d.categories[idx].hidden = hide.checked || undefined;
+        markDirty("data");
+      });
+    });
+
+    /* topics */
+    $$("[data-tk]", main).forEach(function (inp) {
+      inp.addEventListener("input", function () {
+        var parts = inp.getAttribute("data-tk").split("--");
+        var k = parts[0], lang = parts[1];
+        d.topics[k][lang] = inp.value;
+        markDirty("data");
+      });
+    });
+    $$("[data-deltopic]", main).forEach(function (b) {
+      b.addEventListener("click", function () {
+        var k = b.getAttribute("data-deltopic");
+        if (!confirm("Delete topic “" + k + "”? It is not used by any course.")) return;
+        delete d.topics[k];
+        markDirty("data");
+        renderTab();
+      });
+    });
+    $("#voc-add").addEventListener("click", function () {
+      var k = (ui.newKey || "").trim();
+      if (!/^[a-zA-Z][a-zA-Z0-9]*$/.test(k)) { toast("Topic key must be camelCase letters/numbers (no spaces or dashes).", true); return; }
+      if (d.topics[k]) { toast("That key already exists.", true); return; }
+      var en = $("#voc-new-en").value.trim(), sw = $("#voc-new-sw").value.trim();
+      if (!en && !sw) { toast("Give the topic at least one language.", true); return; }
+      d.topics[k] = { en: en, sw: sw };
+      ui.newKey = "";
+      markDirty("data");
+      toast("Topic added — attach it to courses in the Courses tab.");
+      renderTab();
+    });
+    $("#voc-filter").addEventListener("input", function () { ui.filter = this.value; renderTab(); });
+  }
+
+  /* ======================= Site text tab ======================= */
+
+  function renderText(main) {
+    var dict = state.model.i18n;
+    var ui = state.ui.text = state.ui.text || { filter: "", group: "" };
+    var allKeys = Object.keys(dict.en).concat(Object.keys(dict.sw).filter(function (k) { return !(k in dict.en); }));
+
+    var groups = [];
+    allKeys.forEach(function (k) {
+      var g = k.split(".")[0];
+      if (groups.indexOf(g) === -1) groups.push(g);
+    });
+
+    var f = ui.filter.toLowerCase();
+    function row(k) {
+      if (ui.group && k.split(".")[0] !== ui.group) return "";
+      var en = dict.en[k], sw = dict.sw[k];
+      if (f && k.toLowerCase().indexOf(f) === -1 &&
+        String(en || "").toLowerCase().indexOf(f) === -1 &&
+        String(sw || "").toLowerCase().indexOf(f) === -1) return "";
+      var badge = "";
+      if (en === undefined) badge = '<span class="adm-tag warn">missing EN</span>';
+      if (sw === undefined) badge = '<span class="adm-tag warn">missing SW</span>';
+      return "<tr><td><code>" + esc(k) + "</code> " + badge + "</td>" +
+        '<td><textarea data-tx="' + esc(k) + '|en">' + esc(en == null ? "" : en) + "</textarea></td>" +
+        '<td><textarea data-tx="' + esc(k) + '|sw">' + esc(sw == null ? "" : sw) + "</textarea></td></tr>";
+    }
+    var rows = allKeys.map(row).join("");
+
+    main.innerHTML =
+      "<h2>Site text</h2>" +
+      '<p class="lead">Every heading, paragraph, button and quiz sentence on the site — English and Kiswahili side by side. Search by key or wording.</p>' +
+      '<div class="adm-panel adm-toolbar">' +
+      '<input id="tx-filter" value="' + esc(ui.filter) + '" placeholder="Search key or text…" style="min-width:240px;">' +
+      '<select id="tx-group"><option value="">All groups</option>' +
+      groups.map(function (g) { return '<option value="' + esc(g) + '"' + (ui.group === g ? " selected" : "") + ">" + esc(g) + "</option>"; }).join("") +
+      "</select>" +
+      '<span class="adm-note">' + Object.keys(dict.en).length + " EN · " + Object.keys(dict.sw).length + " SW keys</span>" +
+      "</div>" +
+      '<div class="adm-panel adm-tablewrap"><table class="adm-table adm-texttable"><thead><tr><th style="width:24%">Key</th><th>English</th><th>Kiswahili</th></tr></thead>' +
+      "<tbody>" + (rows || '<tr><td colspan="3" class="adm-note">No match.</td></tr>') + "</tbody></table></div>";
+
+    $("#tx-filter").addEventListener("input", function () { ui.filter = this.value; renderTab(); });
+    $("#tx-group").addEventListener("change", function () { ui.group = this.value; renderTab(); });
+    $$("[data-tx]", main).forEach(function (ta) {
+      ta.addEventListener("input", function () {
+        var parts = ta.getAttribute("data-tx").split("|");
+        dict[parts[1]][parts[0]] = ta.value;
+        markDirty("i18n");
+      });
+    });
+  }
+
+  /* ======================= Photos tab ======================= */
+
+  function putFile(path, contentB64, message, cb) {
+    gh("GET", "/repos/" + repoId() + "/contents/" + path + "?ref=" + encodeURIComponent(state.branch), null,
+      function (status, data) {
+        var sha = status === 200 && data ? data.sha : null;
+        var body = { message: message, content: contentB64, branch: state.branch };
+        if (sha) body.sha = sha;
+        gh("PUT", "/repos/" + repoId() + "/contents/" + path, body, function (s2, d2) {
+          if (s2 === 200 || s2 === 201) cb(null);
+          else cb(new Error("Upload " + path + " failed — " + ghMessage(s2, d2)));
+        });
+      });
+  }
+
+  function renderPhotos(main) {
+    var ui = state.ui.photos = state.ui.photos || { uploads: [] };
+    var gallery = state.model.data.gallery;
+
+    var slots = gallery.map(function (g, i) {
+      return '<div class="adm-photo-row" data-slot="' + i + '">' +
+        '<img class="adm-photo-thumb" src="' + esc(g.src) + '" alt="" loading="lazy">' +
+        '<div class="adm-photo-fields">' +
+        '<div class="adm-note">' + esc(g.src) + "</div>" +
+        txtRow("Image file (assets/img/…)", g, "src") +
+        txtRow("Alt text (describe the photo for screen readers)", g, "alt") +
+        biRow("Caption", g, "caption") +
+        '<div class="adm-toolbar">' +
+        '<button class="adm-btn ghost sm" data-up="' + i + '"' + (i === 0 ? " disabled" : "") + '>↑ Up</button>' +
+        '<button class="adm-btn ghost sm" data-down="' + i + '"' + (i === gallery.length - 1 ? " disabled" : "") + ">↓ Down</button>" +
+        '<button class="adm-btn danger sm" data-remove="' + i + '">Remove slot</button>' +
+        "</div></div></div>";
+    }).join("") || '<p class="adm-note">No gallery photos.</p>';
+
+    var uploads = (ui.uploads || []).map(function (u, i) {
+      return '<div class="adm-photo-row adm-pending">' +
+        '<img class="adm-photo-thumb" src="' + u.dataUrl + '" alt="">' +
+        '<div><strong>' + esc(u.path) + "</strong> — new image, uploads on save" +
+        '<div class="adm-toolbar" style="margin-top:.4rem;"><button class="adm-btn ghost sm" data-unqueue="' + i + '">Cancel upload</button></div>' +
+        "</div></div>";
+    }).join("");
+
+    main.innerHTML =
+      "<h2>Photos</h2>" +
+      '<p class="lead">The photo gallery on the home page, plus the hero and leadership photos. New images are resized to max 1200px and compressed in your browser before upload.</p>' +
+
+      '<div class="adm-panel"><h3>Home page gallery</h3>' + slots +
+      '<div class="adm-toolbar" style="margin-top:1rem;">' +
+      '<input type="file" id="ph-file" accept="image/*" style="display:none;">' +
+      '<button class="adm-btn accent sm" id="ph-add">+ Add photo slot (upload)</button>' +
+      '<button class="adm-btn ghost sm" id="ph-pick">Use an existing image…</button>' +
+      '<select id="ph-existing" style="display:none;"></select>' +
+      "</div>" + uploads + "</div>" +
+
+      '<div class="adm-panel"><h3>Replace the hero photo</h3>' +
+      '<div class="adm-photo-row"><img class="adm-photo-thumb" src="assets/img/hero-firstaid.jpg" alt="" loading="lazy">' +
+      '<div><p class="adm-note">assets/img/hero-firstaid.jpg — the big photo on the home page.</p>' +
+      '<input type="file" id="ph-hero" accept="image/*"></div></div></div>' +
+
+      '<div class="adm-panel"><h3>Replace leadership photos</h3>' +
+      '<div class="adm-photo-row"><img class="adm-photo-thumb" src="assets/img/leader-reinfrida.jpg" alt="" loading="lazy">' +
+      '<div><p class="adm-note">assets/img/leader-reinfrida.jpg</p><input type="file" data-replace="assets/img/leader-reinfrida.jpg" accept="image/*"></div></div>' +
+      '<div class="adm-photo-row"><img class="adm-photo-thumb" src="assets/img/leader-kelvin.jpg" alt="" loading="lazy">' +
+      '<div><p class="adm-note">assets/img/leader-kelvin.jpg</p><input type="file" data-replace="assets/img/leader-kelvin.jpg" accept="image/*"></div></div>' +
+      "</div>";
+
+    function wireSlot(i) {
+      var rowEl = $('[data-slot="' + i + '"]', main);
+      var g = gallery[i];
+      wireInputs(rowEl, function (el) {
+        if (el.id.indexOf("f-caption-") === 0) g.caption[el.id.slice(-2)] = el.value;
+        else if (el.id.indexOf("t-src-") === 0) g.src = el.value.trim();
+        else if (el.id.indexOf("t-alt-") === 0) g.alt = el.value;
+      });
+    }
+    for (var i = 0; i < gallery.length; i++) wireSlot(i);
+
+    $$("[data-up]", main).forEach(function (b) {
+      b.addEventListener("click", function () {
+        var i = Number(b.getAttribute("data-up"));
+        gallery.splice(i - 1, 0, gallery.splice(i, 1)[0]);
+        markDirty("data"); renderTab();
+      });
+    });
+    $$("[data-down]", main).forEach(function (b) {
+      b.addEventListener("click", function () {
+        var i = Number(b.getAttribute("data-down"));
+        gallery.splice(i + 1, 0, gallery.splice(i, 1)[0]);
+        markDirty("data"); renderTab();
+      });
+    });
+    $$("[data-remove]", main).forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (!confirm("Remove this photo from the gallery? (The image file stays in the repository.)")) return;
+        gallery.splice(Number(b.getAttribute("data-remove")), 1);
+        markDirty("data"); renderTab();
+      });
+    });
+    $$("[data-unqueue]", main).forEach(function (b) {
+      b.addEventListener("click", function () {
+        ui.uploads.splice(Number(b.getAttribute("data-unqueue")), 1);
+        renderTab();
+      });
+    });
+
+    function queueUpload(file, suggestedName, onQueued) {
+      resizeImage(file, function (err, out) {
+        if (err) return toast(err.message, true);
+        ui.uploads.push({ path: "assets/img/" + suggestedName, content: out.b64, dataUrl: out.dataUrl });
+        onQueued("assets/img/" + suggestedName);
+        updateSavePill();
+      });
+    }
+
+    $("#ph-add").addEventListener("click", function () { $("#ph-file").click(); });
+    $("#ph-file").addEventListener("change", function () {
+      var f = this.files[0];
+      if (!f) return;
+      var name = "gallery-" + f.name.toLowerCase().replace(/\.[a-z0-9]+$/, "").replace(/[^a-z0-9]+/g, "-") + ".jpg";
+      queueUpload(f, name, function (path) {
+        state.model.data.gallery.push({
+          src: path, alt: "",
+          caption: { en: "New photo — add a caption", sw: "Picha mpya — ongeza maelezo" }
+        });
+        markDirty("data");
+        renderTab();
+        toast("Photo added — it uploads when you press Review & save.");
+      });
+      this.value = "";
+    });
+
+    $("#ph-pick").addEventListener("click", function () {
+      var sel = $("#ph-existing");
+      if (sel.style.display === "none") {
+        sel.style.display = "";
+        sel.innerHTML = '<option value="">Loading…</option>';
+        gh("GET", "/repos/" + repoId() + "/contents/assets/img?ref=" + encodeURIComponent(state.branch), null, function (status, data) {
+          if (status !== 200 || !Array.isArray(data)) { sel.innerHTML = '<option value="">Could not list images</option>'; return; }
+          sel.innerHTML = '<option value="">Choose an image…</option>' + data.map(function (f) {
+            return '<option value="' + esc(f.path) + '">' + esc(f.name) + "</option>";
+          }).join("");
+        });
+      } else sel.style.display = "none";
+    });
+    $("#ph-existing").addEventListener("change", function () {
+      var path = this.value;
+      if (!path) return;
+      state.model.data.gallery.push({ src: path, alt: "", caption: { en: "New photo — add a caption", sw: "Picha mpya — ongeza maelezo" } });
+      markDirty("data");
+      renderTab();
+    });
+
+    $("#ph-hero").addEventListener("change", function () {
+      var f = this.files[0];
+      if (!f) return;
+      if (!confirm("Replace the hero photo? It uploads when you press Review & save.")) { this.value = ""; return; }
+      queueUpload(f, "hero-firstaid.jpg", function () { toast("Hero photo queued."); });
+      this.value = "";
+    });
+    $$("[data-replace]", main).forEach(function (inp) {
+      inp.addEventListener("change", function () {
+        var f = this.files[0];
+        var target = this.getAttribute("data-replace");
+        if (!f) return;
+        if (!confirm("Replace " + target + "? It uploads when you press Review & save.")) { this.value = ""; return; }
+        queueUpload(f, target.split("/").pop(), function () { toast("Photo queued."); });
+        this.value = "";
+      });
+    });
+  }
+
+  /* Resize + JPEG-compress an image file entirely in the browser.
+     Max edge 1200px, quality 0.82 — matches the site's existing images. */
+  function resizeImage(file, cb) {
+    if (!/^image\//.test(file.type)) return cb(new Error("Please choose an image file."));
+    var reader = new FileReader();
+    reader.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var MAX = 1200;
+        var scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        var w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+        var canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#fff"; /* flatten transparency for JPEG */
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        var dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+        cb(null, { dataUrl: dataUrl, b64: dataUrl.split(",")[1] });
+      };
+      img.onerror = function () { cb(new Error("That image could not be read.")); };
+      img.src = reader.result;
+    };
+    reader.onerror = function () { cb(new Error("That file could not be read.")); };
+    reader.readAsDataURL(file);
+  }
+
+  /* ---------- save modal ---------- */
   function openSaveModal() {
     var keys = ["config", "data", "i18n"].filter(function (k) { return state.dirty[k]; });
+    var uploads = pendingUploads();
     var mask = document.createElement("div");
     mask.className = "adm-modal-mask";
     mask.innerHTML =
       '<div class="adm-modal"><h3>Review &amp; save</h3>' +
-      '<p class="adm-muted">These files will be committed to <strong>' + esc(state.branch) + "</strong>" +
+      '<p class="adm-muted">Committed to <strong>' + esc(state.branch) + "</strong>" +
       (state.branch === "main" ? " — the live site updates in about a minute." : " — this branch is NOT the live site.") + "</p>" +
-      "<ul>" + keys.map(function (k) { return "<li><code>" + FILE_PATHS[k] + "</code></li>"; }).join("") + "</ul>" +
+      "<ul>" +
+      uploads.map(function (u) { return "<li><code>" + esc(u.path) + "</code> — new image</li>"; }).join("") +
+      keys.map(function (k) { return "<li><code>" + FILE_PATHS[k] + "</code></li>"; }).join("") +
+      "</ul>" +
       '<div class="adm-field"><label for="adm-commit-msg">Commit message</label>' +
-      '<input id="adm-commit-msg" value="CMS: update settings"></div>' +
+      '<input id="adm-commit-msg" value="CMS: update content"></div>' +
       '<div class="row">' +
       '<button class="adm-btn ghost" id="adm-cancel">Cancel</button>' +
-      '<button class="adm-btn accent" id="adm-confirm">Save ' + keys.length + " file" + (keys.length > 1 ? "s" : "") + "</button>" +
+      '<button class="adm-btn accent" id="adm-confirm">Save ' + (keys.length + uploads.length) + " change" + (keys.length + uploads.length > 1 ? "s" : "") + "</button>" +
       "</div></div>";
     document.body.appendChild(mask);
 
@@ -704,8 +1398,19 @@
       var msg = $("#adm-commit-msg", mask).value.trim() || "CMS: update";
       var btn = $("#adm-confirm", mask);
       btn.disabled = true; btn.textContent = "Saving…";
+      var u = 0;
+      (function nextUpload() {
+        if (u >= uploads.length) return nextFile();
+        var up = uploads[u++];
+        toast("Uploading " + up.path + "…");
+        putFile(up.path, up.content, msg, function (err) {
+          if (err) { fail(err); return; }
+          state.ui.photos.uploads.splice(state.ui.photos.uploads.indexOf(up), 1);
+          nextUpload();
+        });
+      })();
       var i = 0;
-      (function next() {
+      function nextFile() {
         if (i >= keys.length) {
           close();
           toast("Saved to " + state.branch + (state.branch === "main" ? " — live in ~1 minute." : "."));
@@ -714,16 +1419,15 @@
         }
         var k = keys[i++];
         commitFile(k, msg, function (err) {
-          if (err) {
-            btn.disabled = false; btn.textContent = "Save";
-            toast(err.message, true);
-            if (k === "config" && /changed on GitHub/.test(err.message)) close();
-            return;
-          }
+          if (err) { fail(err); return; }
           toast("Committed " + FILE_PATHS[k] + "…");
-          next();
+          nextFile();
         });
-      })();
+      }
+      function fail(err) {
+        btn.disabled = false; btn.textContent = "Save";
+        toast(err.message, true);
+      }
     });
   }
 
@@ -733,4 +1437,19 @@
     if (!document.getElementById("admin-root")) return;
     startUI();
   });
+
+  /* Automated-test hook: renders the app shell from an already-parsed
+     model, bypassing login. Not reachable without dev tools. */
+  window.RDK_ADMIN._testBoot = function (model) {
+    state.token = state.token || "test";
+    state.user = state.user || "test";
+    state.branch = state.branch || "main";
+    state.model = model;
+    state.files = state.files || { data: { sha: "t", text: "" }, i18n: { sha: "t", text: "" }, config: { sha: "t", text: "" } };
+    state.tab = state.tab === "overview" ? state.tab : state.tab;
+    renderApp();
+  };
+  window.RDK_ADMIN._testState = function () {
+    return { dirty: { data: state.dirty.data, i18n: state.dirty.i18n, config: state.dirty.config } };
+  };
 })();
