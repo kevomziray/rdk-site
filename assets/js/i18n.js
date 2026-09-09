@@ -83,10 +83,6 @@
       "gallery.eyebrow": "RDK in action",
       "gallery.title": "Real training. Real emergencies.",
       "gallery.sub": "From street response to stadium cover and rig-site safety — this is what we do, every day.",
-      "gallery.cap1": "Street first aid — help where it happens",
-      "gallery.cap2": "Rapid street response",
-      "gallery.cap3": "Standby cover at events and stadiums",
-      "gallery.cap4": "Training that secures jobs on rigs and sites",
 
       "abroad.eyebrow": "Work abroad",
       "abroad.title": "First aid: the life skill that opens doors abroad",
@@ -342,10 +338,6 @@
       "gallery.eyebrow": "RDK katika kitendo",
       "gallery.title": "Mafunzo halisi. Dharura halisi.",
       "gallery.sub": "Kutoka mwitikio wa mitaani hadi uangalizi wa viwanja na usalama wa migodi — hii ndiyo kazi yetu, kila siku.",
-      "gallery.cap1": "Huduma ya kwanza mitaani — msaada pale inapotokea",
-      "gallery.cap2": "Mwitikio wa haraka barabarani",
-      "gallery.cap3": "Uangalizi wa matukio na viwanja vya michezo",
-      "gallery.cap4": "Mafunzo yanayolinda kazi migodini na maeneo ya kazi",
 
       "abroad.eyebrow": "Kazi za nje ya nchi",
       "abroad.title": "Huduma ya kwanza: ujuzi unaofungua fursa nchi za nje",

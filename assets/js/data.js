@@ -387,12 +387,118 @@
     }
   ];
 
+  /* ---------- quiz: questions, time budgets & flagship map ----------
+     Structure only — question and option wording lives in i18n.js
+     (keys quiz.qN and quiz.qN.value). Kept as pure JSON so the CMS
+     can read and regenerate this block.                                */
+  var QUESTIONS = [
+    {
+      id: "audience", key: "quiz.q1",
+      options: [
+        { value: "personal", label: "quiz.q1.personal" },
+        { value: "team", label: "quiz.q1.team" },
+        { value: "school", label: "quiz.q1.school" },
+        { value: "company", label: "quiz.q1.company" }
+      ]
+    },
+    {
+      id: "role", key: "quiz.q2",
+      options: [
+        { value: "parent", label: "quiz.q2.parent" },
+        { value: "teacher", label: "quiz.q2.teacher" },
+        { value: "office", label: "quiz.q2.office" },
+        { value: "hospitality", label: "quiz.q2.hospitality" },
+        { value: "driver", label: "quiz.q2.driver" },
+        { value: "security", label: "quiz.q2.security" },
+        { value: "industrial", label: "quiz.q2.industrial" },
+        { value: "healthcare", label: "quiz.q2.healthcare" },
+        { value: "coach", label: "quiz.q2.coach" },
+        { value: "student", label: "quiz.q2.student" },
+        { value: "abroad", label: "quiz.q2.abroad" }
+      ]
+    },
+    {
+      id: "environment", key: "quiz.q3",
+      options: [
+        { value: "home", label: "quiz.q3.home" },
+        { value: "school", label: "quiz.q3.school" },
+        { value: "office", label: "quiz.q3.office" },
+        { value: "industrial", label: "quiz.q3.industrial" },
+        { value: "road", label: "quiz.q3.road" },
+        { value: "outdoors", label: "quiz.q3.outdoors" }
+      ]
+    },
+    {
+      id: "experience", key: "quiz.q4",
+      options: [
+        { value: "none", label: "quiz.q4.none" },
+        { value: "some", label: "quiz.q4.some" },
+        { value: "advanced", label: "quiz.q4.advanced" }
+      ]
+    },
+    {
+      id: "time", key: "quiz.q5",
+      options: [
+        { value: "half", label: "quiz.q5.half" },
+        { value: "day", label: "quiz.q5.day" },
+        { value: "multi", label: "quiz.q5.multi" },
+        { value: "flexible", label: "quiz.q5.flexible" }
+      ]
+    }
+  ];
+
+  var QUIZ_TIME_BUDGET = { "half": 5, "day": 8, "multi": 24, "flexible": 99 };
+
+  /* the flagship course for each role — gets a small boost so the top
+     recommendation is the most complete fit, not just the cheapest tie */
+  var QUIZ_ROLE_FLAGSHIP = {
+    "parent": "child-infant",
+    "teacher": "school-first-aid",
+    "office": "work-first-aid",
+    "hospitality": "hospitality-tourism",
+    "driver": "drivers-first-aid",
+    "security": "security-first-aid",
+    "industrial": "industrial",
+    "healthcare": "cpr-aed-bls",
+    "coach": "sports-first-aid",
+    "student": "community-first-aid",
+    "abroad": "cpr-aed-bls"
+  };
+
+  /* ---------- home page photo gallery ---------- */
+  var GALLERY = [
+    {
+      src: "assets/img/gallery-street-firstaid.jpg",
+      alt: "RDK team providing street first aid",
+      caption: { en: "Street first aid — help where it happens", sw: "Huduma ya kwanza mitaani — msaada pale inapotokea" }
+    },
+    {
+      src: "assets/img/gallery-street-response.jpg",
+      alt: "RDK rapid street response team",
+      caption: { en: "Rapid street response", sw: "Mwitikio wa haraka barabarani" }
+    },
+    {
+      src: "assets/img/gallery-stadium.jpg",
+      alt: "RDK standby medical team at a stadium event",
+      caption: { en: "Standby cover at events and stadiums", sw: "Uangalizi wa matukio na viwanja vya michezo" }
+    },
+    {
+      src: "assets/img/gallery-rigs.jpg",
+      alt: "RDK safety training for rig and site jobs",
+      caption: { en: "Training that secures jobs on rigs and sites", sw: "Mafunzo yanayolinda kazi migodini na maeneo ya kazi" }
+    }
+  ];
+
   /* ---------- exports ---------- */
   window.RDK = {
     topics: T,
     categories: CATEGORIES,
     courses: COURSES,
     packages: PACKAGES,
+    questions: QUESTIONS,
+    quizTimeBudget: QUIZ_TIME_BUDGET,
+    quizRoleFlagship: QUIZ_ROLE_FLAGSHIP,
+    gallery: GALLERY,
     courseById: function (id) {
       for (var i = 0; i < COURSES.length; i++) if (COURSES[i].id === id) return COURSES[i];
       return null;

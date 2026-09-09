@@ -240,6 +240,7 @@
     renderFilterChips();
     renderCourseGrid();
     renderSectors();
+    renderGallery();
     var chips = document.getElementById("filter-chips");
     if (chips) {
       chips.addEventListener("click", function (e) {
@@ -256,6 +257,7 @@
       renderFilterChips();
       renderCourseGrid();
       renderSectors();
+      renderGallery();
       observeReveals();
     });
   }
@@ -293,6 +295,21 @@
     var mount = document.getElementById("sectors-grid");
     if (!mount) return;
     mount.innerHTML = ABROAD_SECTORS.map(sectorCardHTML).join("");
+  }
+
+  /* ---------- home photo gallery (RDK.gallery) ---------- */
+  function galleryItemHTML(g) {
+    return (
+      '<figure class="gallery-item reveal">' +
+      '<img src="' + esc(g.src) + '" alt="' + esc(g.alt) + '" loading="lazy" width="900" height="600">' +
+      "<figcaption>" + esc(bi(g.caption)) + "</figcaption></figure>"
+    );
+  }
+
+  function renderGallery() {
+    var mount = document.getElementById("gallery-grid");
+    if (!mount) return;
+    mount.innerHTML = (window.RDK.gallery || []).map(galleryItemHTML).join("");
   }
 
   /* ---------- behaviours ---------- */
