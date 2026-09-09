@@ -1466,7 +1466,7 @@
       "popular": false,
       "name": {
         "en": "RDK SME Safety Package",
-        "sw": "Paket ya Usalama ya RDK — SME"
+        "sw": "Pakeji ya Usalama ya RDK — SME"
       },
       "audience": {
         "en": "Small & medium businesses",
@@ -1496,7 +1496,7 @@
       "popular": true,
       "name": {
         "en": "RDK Corporate First Aid Package",
-        "sw": "Paket ya Huduma ya Kwanza ya RDK — Makampuni"
+        "sw": "Pakeji ya Huduma ya Kwanza ya RDK — Makampuni"
       },
       "audience": {
         "en": "Corporate businesses",
@@ -1531,7 +1531,7 @@
       },
       "name": {
         "en": "RDK Industrial Safety Package",
-        "sw": "Paket ya Usalama ya RDK — Viwanda"
+        "sw": "Pakeji ya Usalama ya RDK — Viwanda"
       },
       "audience": {
         "en": "Factories, mining, energy & construction",
@@ -1563,7 +1563,7 @@
       "popular": false,
       "name": {
         "en": "School First Aid Package",
-        "sw": "Paket ya Huduma ya Kwanza — Shule"
+        "sw": "Pakeji ya Huduma ya Kwanza — Shule"
       },
       "audience": {
         "en": "Schools & daycare centres",
