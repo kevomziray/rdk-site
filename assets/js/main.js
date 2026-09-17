@@ -28,12 +28,11 @@
     if (!mount) return;
     var page = pageName();
     var links = [
-      { href: "index.html", key: "nav.home", page: "index.html" },
+      { href: "about.html", key: "nav.about", page: "about.html" },
       { href: "training.html", key: "nav.training", page: "training.html" },
       { href: "quiz.html", key: "nav.quiz", page: "quiz.html", cta: true },
       { href: "work-abroad.html", key: "nav.abroad", page: "work-abroad.html" },
       { href: "blog.html", key: "nav.blog", page: "blog.html" },
-      { href: "about.html", key: "nav.about", page: "about.html" },
       { href: "contact.html", key: "nav.contact", page: "contact.html" }
     ];
     var lis = links.map(function (l) {
