@@ -2,7 +2,9 @@
 
 The admin panel lives at:
 
-**https://kevomziray.github.io/rdk-site/admin.html**
+**https://www.rdk.co.tz/admin.html**
+
+(The old address `kevomziray.github.io/rdk-site/admin.html` redirects here.)
 
 Bookmark it. It is not linked anywhere on the public site and is hidden from
 search engines (`noindex`).

@@ -26,9 +26,12 @@ Static HTML/CSS/JS — no build step required.
 
 ## Deployment
 
-GitHub Pages. Links are relative, so it works at any subpath
-(`https://<user>.github.io/rdk-site/`). A custom domain (rdk.co.tz) can be
-attached later via repo Settings → Pages → Custom domain.
+Live at **https://www.rdk.co.tz** (custom domain), served by a Vercel project
+that auto-deploys the `main` branch. GitHub Pages is attached to the same
+domain via the `CNAME` file, so the old `kevomziray.github.io/rdk-site/`
+address 301-redirects to the domain. Links are relative, so the site works
+at any origin. SEO: canonical/OG/Twitter tags per page, `sitemap.xml`,
+`robots.txt`, JSON-LD on `index.html` — all pinned to `https://www.rdk.co.tz`.
 
 ## Swahili note
 
