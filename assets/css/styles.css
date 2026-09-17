@@ -584,3 +584,5 @@ p { margin: 0 0 1em; }
   width: 100%; aspect-ratio: 3 / 2; object-fit: cover;
   border-radius: var(--radius); box-shadow: var(--shadow);
 }
+#cookie-notice .cookie-actions { display: flex; gap: .6rem; flex-wrap: wrap; }
+#cookie-notice .btn { white-space: nowrap; }
