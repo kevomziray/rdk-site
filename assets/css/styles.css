@@ -579,3 +579,8 @@ p { margin: 0 0 1em; }
   font-size: .85rem; font-weight: 700; color: var(--ink-soft);
   text-transform: uppercase; letter-spacing: .06em;
 }
+.article .post-figure { margin: 0 0 1.6rem; }
+.article .post-figure img {
+  width: 100%; aspect-ratio: 3 / 2; object-fit: cover;
+  border-radius: var(--radius); box-shadow: var(--shadow);
+}

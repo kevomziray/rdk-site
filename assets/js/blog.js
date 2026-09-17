@@ -61,11 +61,15 @@
     mount.classList.add("hidden");
     postView.classList.remove("hidden");
     var paras = (p.body[lang()] || p.body.en) || [];
+    var img = p.image
+      ? '<figure class="post-figure"><img src="' + esc(p.image.src) + '" alt="' + esc(p.image.alt) + '" loading="lazy"></figure>'
+      : "";
     postView.innerHTML =
       '<a class="back-link" href="blog.html">' + esc(t("blog.back")) + "</a>" +
       '<article class="article">' +
       "<h1>" + esc(bi(p.title)) + "</h1>" +
       '<p class="post-date">' + esc(t("blog.published")) + ": " + esc(p.date) + "</p>" +
+      img +
       paras.map(function (para) { return "<p>" + esc(para) + "</p>"; }).join("") +
       "</article>";
   }
