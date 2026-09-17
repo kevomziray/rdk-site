@@ -32,6 +32,7 @@
       { href: "training.html", key: "nav.training", page: "training.html" },
       { href: "quiz.html", key: "nav.quiz", page: "quiz.html", cta: true },
       { href: "work-abroad.html", key: "nav.abroad", page: "work-abroad.html" },
+      { href: "blog.html", key: "nav.blog", page: "blog.html" },
       { href: "about.html", key: "nav.about", page: "about.html" },
       { href: "contact.html", key: "nav.contact", page: "contact.html" }
     ];
@@ -95,6 +96,7 @@
       '<li><a href="quiz.html" data-i18n="nav.quiz"></a></li>' +
       '<li><a href="work-abroad.html" data-i18n="nav.abroad"></a></li>' +
       '<li><a href="about.html" data-i18n="nav.about"></a></li>' +
+      '<li><a href="blog.html" data-i18n="nav.blog"></a></li>' +
       '<li><a href="contact.html" data-i18n="nav.contact"></a></li>' +
       "</ul></div>" +
       "<div><h4 data-i18n=\"footer.contact\"></h4><ul>" +
@@ -104,6 +106,7 @@
       (waText ? '<li><a href="' + wa + '" target="_blank" rel="noopener">' + esc(waText) + "</a></li>" : "") +
       "</ul></div>" +
       "<div><h4 data-i18n=\"footer.legal\"></h4><ul class=\"footer-legal\">" +
+      '<li><a href="privacy.html" data-i18n="footer.privacy"></a></li>' +
       '<li data-i18n="footer.incorp"></li>' +
       '<li data-i18n="footer.license"></li>' +
       '<li data-i18n="footer.tin"></li>' +

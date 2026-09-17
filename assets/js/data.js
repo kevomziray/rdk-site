@@ -1756,11 +1756,11 @@
   /* ---------- home page photo gallery ---------- */
   var GALLERY =  [
     {
-      "src": "assets/img/gallery-street-firstaid.jpg",
-      "alt": "RDK team providing street first aid",
+      "src": "assets/img/gallery-office-firstaid.jpg",
+      "alt": "RDK workplace first-aid training with a first-aid kit",
       "caption": {
-        "en": "Street first aid — help where it happens",
-        "sw": "Huduma ya kwanza mitaani — msaada pale inapotokea"
+        "en": "Workplace first aid — training and kits for offices",
+        "sw": "Huduma ya kwanza ofisini — mafunzo na vifaa vya huduma ya kwanza"
       }
     },
     {

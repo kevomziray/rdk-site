@@ -25,6 +25,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://www.rdk.co.tz/blog.html</loc>
+    <lastmod>2026-09-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://www.rdk.co.tz/about.html</loc>
     <lastmod>2026-09-17</lastmod>
     <changefreq>yearly</changefreq>
@@ -35,5 +41,11 @@
     <lastmod>2026-09-17</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.rdk.co.tz/privacy.html</loc>
+    <lastmod>2026-09-17</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
 </urlset>
