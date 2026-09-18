@@ -1231,6 +1231,8 @@
       '<input type="file" id="ph-hero" accept="image/*"></div></div></div>' +
 
       '<div class="adm-panel"><h3>Replace leadership photos</h3>' +
+      '<div class="adm-photo-row"><img class="adm-photo-thumb" src="assets/img/leader-paul.jpg" alt="" loading="lazy">' +
+      '<div><p class="adm-note">assets/img/leader-paul.jpg — Paul R. O Sewe, Managing Director</p><input type="file" data-replace="assets/img/leader-paul.jpg" accept="image/*"></div></div>' +
       '<div class="adm-photo-row"><img class="adm-photo-thumb" src="assets/img/leader-reinfrida.jpg" alt="" loading="lazy">' +
       '<div><p class="adm-note">assets/img/leader-reinfrida.jpg</p><input type="file" data-replace="assets/img/leader-reinfrida.jpg" accept="image/*"></div></div>' +
       '<div class="adm-photo-row"><img class="adm-photo-thumb" src="assets/img/leader-kelvin.jpg" alt="" loading="lazy">' +
