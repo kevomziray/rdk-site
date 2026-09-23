@@ -639,8 +639,8 @@
       '<p class="lead">Contact channels, social links, office address and legal numbers used across the site.</p>' +
 
       '<div class="adm-panel"><h3>Contact</h3><div class="adm-grid2">' +
-      field("WhatsApp number (digits only, international format)", "set-wa", c.whatsapp, "255684114433") +
-      field("WhatsApp display text", "set-wa-display", c.whatsappDisplay, "+255 684 114 433") +
+      field("WhatsApp number (digits only, international format)", "set-wa", c.whatsapp, "255759051614") +
+      field("WhatsApp display text", "set-wa-display", c.whatsappDisplay, "+255 759 051 614") +
       field("Email address", "set-email", c.email, "info@rdk.co.tz") +
       "</div></div>" +
 

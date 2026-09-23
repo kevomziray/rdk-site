@@ -260,7 +260,7 @@
       "privacy.s6h": "How long we keep information",
       "privacy.s6p": "We keep contact-form messages and waitlist entries only as long as they are useful for answering you and arranging courses, after which they are deleted. Technical logs are kept for a short period by our hosting provider.",
       "privacy.s7h": "Your rights",
-      "privacy.s7p": "You may ask us at any time to show you the information we hold about you, to correct it, or to delete it. To make a request, email info@rdk.co.tz or message us on WhatsApp at +255 684 114 433. We will respond as soon as we can.",
+      "privacy.s7p": "You may ask us at any time to show you the information we hold about you, to correct it, or to delete it. To make a request, email info@rdk.co.tz or message us on WhatsApp at +255 759 051 614. We will respond as soon as we can.",
       "privacy.s8h": "Changes to this policy",
       "privacy.s8p": "We may update this policy from time to time. The date of the latest change is always shown at the top of this page."
     },
@@ -517,7 +517,7 @@
       "privacy.s6h": "Muda tunazohifadhi taarifa",
       "privacy.s6p": "Tunahifadhi ujumbe wa fomu na orodha ya wanaosubiri kwa muda unaohitajika kukujibu na kupanga mafunzo, kisha tunafuta. Kumbukumbu za kiufundi zinahifadhiwa kwa muda mfupi na mtuhudumia wa tovuti.",
       "privacy.s7h": "Haki zako",
-      "privacy.s7p": "Unaweza kutuomba wakati wowote kuonyesha taarifa tunazozo kuhusu wewe, kuzirekebisha, au kuzifuta. Ombi litumie kwa barua pepe info@rdk.co.tz au ujumbe wa WhatsApp +255 684 114 433. Tutajibu haraka iwezekanavyo.",
+      "privacy.s7p": "Unaweza kutuomba wakati wowote kuonyesha taarifa tunazozo kuhusu wewe, kuzirekebisha, au kuzifuta. Ombi litumie kwa barua pepe info@rdk.co.tz au ujumbe wa WhatsApp +255 759 051 614. Tutajibu haraka iwezekanavyo.",
       "privacy.s8h": "Mabadiliko ya sera hii",
       "privacy.s8p": "Sera hii inaweza kusasishwa mara kwa mara. Tarehe ya mabadiliko ya mwisho huonyeshwa juu ya ukurasa huu."
     }
